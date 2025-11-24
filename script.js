@@ -23,7 +23,10 @@ const metricSeeds = [
   { label: 'Live sessions', suffix: '', min: 42, max: 78 },
 ];
 
-const prompts = [];
+const STORAGE_KEY = 'tracknamic-sandbox-prompts';
+let prompts = [];
+let selectedPromptId = null;
+let runs = [];
 
 function renderModules(filter = 'all') {
   const grid = document.getElementById('module-grid');
@@ -146,29 +149,115 @@ function normalizeTags(raw) {
     .filter(Boolean);
 }
 
+function persistPrompts() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(prompts));
+}
+
+function loadPrompts() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      prompts = JSON.parse(saved);
+      selectedPromptId = prompts[0]?.id || null;
+    }
+  } catch (e) {
+    console.error('Unable to load prompts', e);
+  }
+}
+
+function formatTimestamp(value) {
+  const date = new Date(value);
+  return date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function getSelectedPrompt() {
+  return prompts.find((p) => p.id === selectedPromptId) || prompts[0];
+}
+
+function setActivePromptLabel() {
+  const pill = document.getElementById('active-prompt-pill');
+  const active = getSelectedPrompt();
+  pill.textContent = active ? active.title : 'No prompt selected';
+}
+
 function renderPromptList() {
   const list = document.getElementById('prompt-list');
+  const count = document.getElementById('prompt-count');
   list.innerHTML = '';
+  count.textContent = `${prompts.length} saved`;
   if (!prompts.length) {
     list.innerHTML = '<p class="muted">No prompts yet. Create one to see it here.</p>';
     return;
   }
   prompts.forEach((prompt) => {
     const item = document.createElement('div');
-    item.className = 'prompt-item';
+    item.className = `prompt-item ${prompt.id === getSelectedPrompt()?.id ? 'selected' : ''}`;
     const tagBadges = prompt.tags.map((t) => `<span class="badge">${t}</span>`).join('');
     item.innerHTML = `
-      <h4>${prompt.title}</h4>
-      <p class="muted">${prompt.body.slice(0, 120)}${prompt.body.length > 120 ? '…' : ''}</p>
-      <div class="prompt-meta">
-        <span>Model: ${prompt.model}</span>
-        <span>Temp: ${prompt.temperature}</span>
-        <span>Saved ${prompt.timeLabel}</span>
+      <div class="prompt-item-top">
+        <div>
+          <h4>${prompt.title}</h4>
+          <p class="muted">${prompt.body.slice(0, 120)}${prompt.body.length > 120 ? '…' : ''}</p>
+          <div class="prompt-meta">
+            <span>Model: ${prompt.model}</span>
+            <span>Temp: ${prompt.temperature}</span>
+            <span>Saved ${formatTimestamp(prompt.savedAt)}</span>
+          </div>
+          <div class="prompt-meta">${tagBadges || '<span class="muted">No tags</span>'}</div>
+        </div>
+        <div class="prompt-actions">
+          <button type="button" class="ghost" data-action="load" data-id="${prompt.id}">Load to editor</button>
+          <button type="button" class="secondary" data-action="select" data-id="${prompt.id}">Use in experiment</button>
+          <button type="button" class="ghost danger" data-action="delete" data-id="${prompt.id}">Delete</button>
+        </div>
       </div>
-      <div class="prompt-meta">${tagBadges || '<span class="muted">No tags</span>'}</div>
     `;
     list.appendChild(item);
   });
+
+  list.querySelectorAll('button').forEach((btn) => {
+    const id = btn.dataset.id;
+    const action = btn.dataset.action;
+    btn.addEventListener('click', () => handlePromptAction(action, id));
+  });
+}
+
+function populateForm(prompt) {
+  const form = document.getElementById('prompt-form');
+  form.dataset.editingId = prompt.id;
+  form.querySelector('input[name="title"]').value = prompt.title;
+  form.querySelector('textarea[name="body"]').value = prompt.body;
+  form.querySelector('input[name="tags"]').value = prompt.tags.join(', ');
+  form.querySelector('select[name="model"]').value = prompt.model;
+  form.querySelector('input[name="temperature"]').value = prompt.temperature;
+  document.getElementById('prompt-status').textContent = 'Editing existing prompt. Save to update.';
+}
+
+function clearForm() {
+  const form = document.getElementById('prompt-form');
+  form.reset();
+  delete form.dataset.editingId;
+  document.getElementById('prompt-status').textContent = '';
+}
+
+function handlePromptAction(action, id) {
+  const prompt = prompts.find((p) => p.id === id);
+  if (!prompt) return;
+  if (action === 'load') {
+    populateForm(prompt);
+  }
+  if (action === 'select') {
+    selectedPromptId = id;
+    setActivePromptLabel();
+    renderPromptList();
+  }
+  if (action === 'delete') {
+    prompts = prompts.filter((p) => p.id !== id);
+    if (selectedPromptId === id) selectedPromptId = prompts[0]?.id || null;
+    persistPrompts();
+    renderPromptList();
+    setActivePromptLabel();
+  }
 }
 
 function handlePromptSubmit() {
@@ -183,18 +272,31 @@ function handlePromptSubmit() {
     const model = data.get('model');
     const temperature = Number(data.get('temperature')).toFixed(2);
     if (!title || !body) return;
-    prompts.unshift({
-      id: crypto.randomUUID(),
-      title,
-      body,
-      tags,
-      model,
-      temperature,
-      timeLabel: 'just now',
-    });
+
+    const editingId = form.dataset.editingId;
+    if (editingId) {
+      prompts = prompts.map((p) => (p.id === editingId ? { ...p, title, body, tags, model, temperature, savedAt: Date.now() } : p));
+      selectedPromptId = editingId;
+      status.textContent = 'Prompt updated and ready to test.';
+    } else {
+      const id = crypto.randomUUID();
+      prompts.unshift({
+        id,
+        title,
+        body,
+        tags,
+        model,
+        temperature,
+        savedAt: Date.now(),
+      });
+      selectedPromptId = id;
+      status.textContent = 'Saved locally. Try an experiment with this prompt.';
+    }
+    persistPrompts();
     renderPromptList();
-    status.textContent = 'Saved locally. Try an experiment with this prompt.';
+    setActivePromptLabel();
     form.reset();
+    delete form.dataset.editingId;
   });
 }
 
@@ -226,8 +328,8 @@ function runExperiment() {
   const output = document.getElementById('experiment-output');
   const meta = document.getElementById('experiment-meta');
   const scenario = document.getElementById('scenario').value;
-  const latestPrompt = prompts[0];
-  if (!latestPrompt) {
+  const prompt = getSelectedPrompt();
+  if (!prompt) {
     output.innerHTML = '<p class="muted">Save a prompt first to run an experiment.</p>';
     meta.textContent = '';
     return;
@@ -243,15 +345,24 @@ function runExperiment() {
       tone: 'Adjusted tone to formal, retained brevity.',
     };
     output.innerHTML = `
-      <p><strong>Model:</strong> ${latestPrompt.model}</p>
-      <p><strong>Generated:</strong> ${latestPrompt.body.slice(0, 140)}...</p>
+      <p><strong>Model:</strong> ${prompt.model}</p>
+      <p><strong>Generated:</strong> ${prompt.body.slice(0, 140)}...</p>
       <p><strong>Scenario:</strong> ${scenarioNotes[scenario]}</p>
     `;
     meta.innerHTML = `
       <span class="badge">Latency: ${latency}ms</span>
       <span class="badge">Score: ${score}</span>
-      <span class="badge">Temp: ${latestPrompt.temperature}</span>
+      <span class="badge">Temp: ${prompt.temperature}</span>
     `;
+    runs.unshift({
+      id: crypto.randomUUID(),
+      promptTitle: prompt.title,
+      scenario,
+      latency,
+      score,
+      time: Date.now(),
+    });
+    renderRunLog();
   }, 650);
 }
 
@@ -259,7 +370,34 @@ function setupExperimentRunner() {
   document.getElementById('run-experiment').addEventListener('click', runExperiment);
 }
 
+function renderRunLog() {
+  const log = document.getElementById('run-log');
+  log.innerHTML = '';
+  if (!runs.length) {
+    log.innerHTML = '<p class="muted">No runs yet. Execute an experiment to see history.</p>';
+    return;
+  }
+  const recent = runs.slice(0, 4);
+  recent.forEach((run) => {
+    const row = document.createElement('div');
+    row.className = 'log-row';
+    row.innerHTML = `
+      <div>
+        <p class="log-title">${run.promptTitle}</p>
+        <p class="muted small">Scenario: ${run.scenario}</p>
+      </div>
+      <div class="log-meta">
+        <span class="badge">${run.latency}ms</span>
+        <span class="badge">Score ${run.score}</span>
+        <span class="muted small">${formatTimestamp(run.time)}</span>
+      </div>
+    `;
+    log.appendChild(row);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  loadPrompts();
   renderModules();
   setupFilters();
   setupTabs();
@@ -268,7 +406,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setupForm();
   setupThemeToggle();
   renderPromptList();
+  setActivePromptLabel();
   handlePromptSubmit();
   setupSandboxButtons();
   setupExperimentRunner();
+  document.getElementById('new-prompt').addEventListener('click', clearForm);
+  renderRunLog();
 });

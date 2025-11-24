@@ -196,7 +196,10 @@
       </div>
       <div class="sandbox-grid">
         <div class="card stack">
-          <h3>Create a prompt</h3>
+          <div class="card-heading">
+            <h3>Create a prompt</h3>
+            <button type="button" id="new-prompt" class="ghost">New draft</button>
+          </div>
           <form id="prompt-form" class="prompt-form" aria-label="Prompt creation form">
             <label>
               <span>Title</span>
@@ -227,13 +230,17 @@
             <div class="sandbox-actions">
               <button type="button" id="improve-btn" class="secondary">AI Improve</button>
               <button type="button" id="summarize-btn" class="ghost">Summarize</button>
-              <button type="submit" class="primary">Save prompt</button>
+              <button type="submit" class="primary" id="save-prompt">Save prompt</button>
             </div>
             <p class="muted small" id="prompt-status" role="status" aria-live="polite"></p>
           </form>
+          <p class="muted small">Saved prompts stay in your browser so you can revisit and iterate.</p>
         </div>
         <div class="card stack">
-          <h3>Experiment output</h3>
+          <div class="card-heading">
+            <h3>Experiment output</h3>
+            <div class="pill" id="active-prompt-pill">No prompt selected</div>
+          </div>
           <div class="experiment-controls">
             <label>
               <span>Run scenario</span>
@@ -249,9 +256,13 @@
             <p class="muted">Results will appear here with latency + score.</p>
           </div>
           <div class="output-meta" id="experiment-meta"></div>
+          <div class="log" id="run-log" aria-live="polite"></div>
         </div>
         <div class="card stack">
-          <h3>Saved prompts</h3>
+          <div class="card-heading">
+            <h3>Saved prompts</h3>
+            <span class="muted small" id="prompt-count">0 saved</span>
+          </div>
           <div id="prompt-list" class="prompt-list" aria-live="polite">
             <p class="muted">No prompts yet. Create one to see it here.</p>
           </div>

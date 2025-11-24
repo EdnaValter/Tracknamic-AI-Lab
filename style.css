@@ -101,6 +101,7 @@ main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; display: flex
 
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: grid; gap: 8px; }
 .card h3 { margin: 0; }
+.card-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .bullets { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; }
 
 .tabs { display: flex; gap: 8px; }
@@ -183,13 +184,22 @@ body.light {
 .output-meta { display: flex; gap: 8px; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
 .badge { padding: 6px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; }
 .prompt-list { display: grid; gap: 10px; }
-.prompt-item { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: #0f121b; display: grid; gap: 6px; }
+.prompt-item { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: #0f121b; display: grid; gap: 10px; }
+.prompt-item.selected { border-color: var(--accent); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
+.prompt-item-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.prompt-actions { display: grid; gap: 6px; min-width: 150px; }
+.prompt-actions .danger { color: var(--danger); border-color: rgba(251, 113, 133, 0.35); }
 .prompt-item h4 { margin: 0; }
 .prompt-meta { display: flex; gap: 8px; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
+.log { display: grid; gap: 8px; margin-top: 8px; }
+.log-row { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; gap: 10px; align-items: center; background: #0f121b; }
+.log-title { margin: 0; font-weight: 700; }
+.log-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 
 body.light .prompt-form input,
 body.light .prompt-form textarea,
 body.light .prompt-form select,
 body.light .output,
-body.light .prompt-item { background: #f8fafc; border-color: #e2e8f0; }
+body.light .prompt-item,
+body.light .log-row { background: #f8fafc; border-color: #e2e8f0; }
 body.light .output { color: #0f172a; }
