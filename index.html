@@ -13,7 +13,6 @@
   <header class="top-bar">
     <div class="logo">Tracknamic AI Lab</div>
     <nav class="nav" aria-label="Primary navigation">
-      <a href="#ai">AI Lab</a>
       <a href="sandbox.html">Sandbox</a>
     </nav>
     <div class="actions">
@@ -109,6 +108,38 @@
         </aside>
       </div>
     </section>
+    <section class="panel overview" id="overview">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">What's included</p>
+          <h2>Everything you can explore on this page</h2>
+          <p class="muted">Preview the full lab experience at a glance: authoring, collaboration, and the sandbox you can launch from the top bar.</p>
+        </div>
+        <div class="pill">Prompt feed · Sandbox</div>
+      </div>
+      <div class="grid grid-3 feature-grid">
+        <div class="card feature-card">
+          <div class="feature-icon" aria-hidden="true">🧠</div>
+          <h3>Prompt workspace</h3>
+          <p class="muted">Compose prompts with validation, see real-time previews, and publish to the shared feed.</p>
+          <ul class="bullets">
+            <li>Compose, preview, and reset controls in the left rail</li>
+            <li>Sortable feed with tag filters, reactions, and pagination</li>
+            <li>Detail modal with comments, related prompts, and sharing</li>
+          </ul>
+        </div>
+        <div class="card feature-card">
+          <div class="feature-icon" aria-hidden="true">🧪</div>
+          <h3>Sandbox launch</h3>
+          <p class="muted">Jump into the sandbox to tweak providers, prompts, temperature, and safety settings.</p>
+          <ul class="bullets">
+            <li>Launch via the header button for live prompt experiments</li>
+            <li>Provider, model, and safety controls with instant feedback</li>
+            <li>Response history to compare outputs across iterations</li>
+          </ul>
+        </div>
+      </div>
+    </section>
     <section class="hero" id="hero">
       <div class="hero-text">
         <p class="eyebrow">Developer-first prompt lab</p>
@@ -151,45 +182,6 @@
       </div>
     </section>
 
-    <section class="panel" id="ai">
-      <div class="section-header">
-        <div>
-          <p class="eyebrow">AI service layer</p>
-          <h2>Optimizers, summarizers, and discovery</h2>
-          <p class="muted">A thin, testable API surface to keep AI calls predictable and debuggable.</p>
-        </div>
-        <div class="pill">OpenAI · Anthropic · pgvector</div>
-      </div>
-      <div class="grid grid-3">
-        <div class="card">
-          <h3>Prompt optimization</h3>
-          <p>Deterministic templates with guardrails, cached per prompt version.</p>
-          <ul class="bullets">
-            <li>zod-validated inputs</li>
-            <li>Rate-limited per user</li>
-            <li>Observability hooks</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>Summarization</h3>
-          <p>Fast abstracts for feeds, notifications, and search snippets.</p>
-          <ul class="bullets">
-            <li>Latency budgets</li>
-            <li>HTML-safe output</li>
-            <li>Fallback models</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>Related prompts</h3>
-          <p>Hybrid retrieval mixing tags, embeddings, and recency scoring.</p>
-          <ul class="bullets">
-            <li>pgvector similarity</li>
-            <li>Tag boost + decay</li>
-            <li>Server-side caching</li>
-          </ul>
-        </div>
-      </div>
-    </section>
   </main>
 
   <section class="modal" id="prompt-modal" hidden aria-label="Prompt detail">
@@ -236,7 +228,6 @@
     <p>Tracknamic AI Lab · Built for product-minded engineers.</p>
     <div class="footer-links">
       <a href="#hero">Back to top</a>
-      <a href="#ai">AI Lab</a>
       <a href="sandbox.html">Sandbox</a>
     </div>
   </footer>
