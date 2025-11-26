@@ -13,12 +13,8 @@
   <header class="top-bar">
     <div class="logo">Tracknamic AI Lab</div>
     <nav class="nav" aria-label="Primary navigation">
-      <a href="#modules">Modules</a>
-      <a href="#roadmap">Roadmap</a>
-      <a href="#workflows">Workflows</a>
-      <a href="#ai">AI Layer</a>
+      <a href="#ai">AI Lab</a>
       <a href="sandbox.html">Sandbox</a>
-      <a href="#contact">Contact</a>
     </nav>
     <div class="actions">
       <button id="theme-toggle" class="ghost" aria-label="Toggle theme">🌗</button>
@@ -155,82 +151,6 @@
       </div>
     </section>
 
-    <section class="panel" id="modules">
-      <div class="section-header">
-        <div>
-          <p class="eyebrow">What you'll ship first</p>
-          <h2>Foundation modules</h2>
-          <p class="muted">Auth, feeds, and collaboration stitched together with real-time events and AI helpers.</p>
-        </div>
-        <div class="filters" role="group" aria-label="Module filters">
-          <button class="chip active" data-filter="all">All</button>
-          <button class="chip" data-filter="collab">Collaboration</button>
-          <button class="chip" data-filter="ai">AI</button>
-          <button class="chip" data-filter="safety">Safety</button>
-        </div>
-      </div>
-      <div class="grid" id="module-grid" aria-live="polite"></div>
-    </section>
-
-    <section class="panel" id="roadmap">
-      <div class="section-header">
-        <div>
-          <p class="eyebrow">Delivery plan</p>
-          <h2>MVP → V1 → Beyond</h2>
-          <p class="muted">Phased rollout with clear swimlanes, QA gates, and observability.</p>
-        </div>
-        <div class="tabs" role="tablist" aria-label="Roadmap phases">
-          <button class="tab active" data-tab="mvp" role="tab" aria-selected="true">MVP</button>
-          <button class="tab" data-tab="v1" role="tab" aria-selected="false">V1</button>
-          <button class="tab" data-tab="future" role="tab" aria-selected="false">Future</button>
-        </div>
-      </div>
-      <div class="tab-panels">
-        <div class="tab-panel active" id="panel-mvp" role="tabpanel">
-          <ul class="checklist">
-            <li>NextAuth with GitHub/Google + onboarding interests.</li>
-            <li>Prompt feed, detail, create/edit with markdown preview.</li>
-            <li>Likes, bookmarks, forks, threaded comments.</li>
-            <li>Basic notifications and report/hide moderation.</li>
-            <li>AI optimize & summarize actions with rate limits.</li>
-          </ul>
-        </div>
-        <div class="tab-panel" id="panel-v1" role="tabpanel">
-          <ul class="checklist">
-            <li>Teams/spaces with invites and granular roles.</li>
-            <li>Collections, drafts, versioning, embeddable widgets.</li>
-            <li>Email/push notifications and moderation dashboard.</li>
-            <li>Embedding-based search with pgvector and caching.</li>
-            <li>PWA shell, accessibility hardening, analytics.</li>
-          </ul>
-        </div>
-        <div class="tab-panel" id="panel-future" role="tabpanel">
-          <ul class="checklist">
-            <li>Collaborative editing with CRDTs.</li>
-            <li>Marketplace and verified creators.</li>
-            <li>Experiment harness, custom model routing.</li>
-            <li>Co-writing AI and DSL for reusable patterns.</li>
-            <li>Enterprise SSO, audit trails, feature flags.</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel split" id="workflows">
-      <div>
-        <p class="eyebrow">User workflows</p>
-        <h2>From draft to deployed prompt</h2>
-        <p class="muted">Each step is observable, reversible, and shareable with your team.</p>
-        <div class="accordion" id="workflow-accordion"></div>
-      </div>
-      <div class="card stack" aria-label="Live metrics">
-        <h3>Live health</h3>
-        <div class="metrics" id="metrics"></div>
-        <button class="secondary" id="refresh-metrics">Refresh</button>
-        <p class="muted small">Metrics auto-refresh every 20s.</p>
-      </div>
-    </section>
-
     <section class="panel" id="ai">
       <div class="section-header">
         <div>
@@ -268,51 +188,6 @@
             <li>Server-side caching</li>
           </ul>
         </div>
-      </div>
-    </section>
-    <section class="panel contact" id="contact">
-      <div>
-        <p class="eyebrow">See it live</p>
-        <h2>Join the pilot cohort</h2>
-        <p class="muted">We onboard small teams weekly. Tell us your stack, models, and use cases.</p>
-        <form class="contact-form" id="contact-form" aria-label="Request access form">
-          <label>
-            <span>Work email</span>
-            <input type="email" name="email" required placeholder="you@company.com" />
-          </label>
-          <label>
-            <span>Team size</span>
-            <select name="size" required>
-              <option value="">Select</option>
-              <option value="1-5">1-5</option>
-              <option value="6-15">6-15</option>
-              <option value="16-50">16-50</option>
-              <option value="50+">50+</option>
-            </select>
-          </label>
-          <label>
-            <span>Use case</span>
-            <textarea name="usecase" rows="3" placeholder="RAG assistant for support, marketing copilot, etc." required></textarea>
-          </label>
-          <button type="submit" class="primary">Request access</button>
-          <p class="muted small" id="form-status" role="status" aria-live="polite"></p>
-        </form>
-      </div>
-      <div class="card stack">
-        <h3>Security checklist</h3>
-        <ul class="bullets">
-          <li>RBAC roles: user, mod, admin</li>
-          <li>HTTPS, HSTS, CSP, CSRF</li>
-          <li>Rate limits + audit logs</li>
-          <li>Secure secret storage</li>
-        </ul>
-        <h3>Performance</h3>
-        <ul class="bullets">
-          <li>CDN + edge caching</li>
-          <li>Incremental static regen</li>
-          <li>Redis-backed timelines</li>
-          <li>Background workers for AI</li>
-        </ul>
       </div>
     </section>
   </main>
@@ -361,8 +236,8 @@
     <p>Tracknamic AI Lab · Built for product-minded engineers.</p>
     <div class="footer-links">
       <a href="#hero">Back to top</a>
-      <a href="#roadmap">Roadmap</a>
-      <a href="#contact">Request access</a>
+      <a href="#ai">AI Lab</a>
+      <a href="sandbox.html">Sandbox</a>
     </div>
   </footer>
   <script type="module" src="script.js"></script>
