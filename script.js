@@ -10,6 +10,9 @@ const modules = [
 ];
 
 export const STORAGE_KEY = 'ai-lab-prompts';
+export const CURRENT_USER = { id: 'demo-user', name: 'Casey Demo' };
+
+const now = () => Date.now();
 
 export const DEFAULT_PROMPTS = [
   {
@@ -17,23 +20,42 @@ export const DEFAULT_PROMPTS = [
     title: 'Engineering Mentor',
     body: 'You are a senior engineer who explains concepts with crisp examples.',
     tags: ['getting-started', 'mentorship'],
-    model: 'gpt-4o',
-    temperature: '0.35',
-    savedAt: Date.now(),
+    author: CURRENT_USER,
+    tip: 'Preface with a persona and concrete examples.',
+    createdAt: now(),
+    updatedAt: now(),
+    reactions: { like: { count: 4, users: [] }, celebrate: { count: 1, users: [] } },
+    comments: [
+      {
+        id: 'comment-1',
+        author: { id: 'alex', name: 'Alex' },
+        body: 'Adding a short objective before the persona helps!',
+        createdAt: now(),
+        parentId: null,
+      },
+    ],
+    saves: ['team-shared'],
+    forks: 1,
   },
   {
     id: 'product-writer',
     title: 'Product explainer',
     body: 'Summarize requirements into a one-pager with bullets and risks.',
     tags: ['productivity'],
-    model: 'gpt-4.1-mini',
-    temperature: '0.25',
-    savedAt: Date.now(),
+    author: { id: 'kim', name: 'Kim Tran' },
+    tip: 'Keep risks short and add a rollout plan.',
+    createdAt: now(),
+    updatedAt: now(),
+    reactions: { like: { count: 7, users: [] }, celebrate: { count: 2, users: [] } },
+    comments: [],
+    saves: [],
+    forks: 0,
   },
 ];
 
 let prompts = [];
 let selectedPromptId = null;
+let activityFeed = [];
 
 /**
  * Normalize a comma-delimited tag string into an array of trimmed values.
@@ -58,6 +80,13 @@ export function setPrompts(next) {
 function persistPrompts() {
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prompts));
+  }
+}
+
+function recordActivity(entry) {
+  activityFeed.unshift({ id: crypto.randomUUID(), createdAt: now(), ...entry });
+  if (activityFeed.length > 20) {
+    activityFeed = activityFeed.slice(0, 20);
   }
 }
 
@@ -97,6 +126,102 @@ export function seedDefaultsIfEmpty() {
 
 export function loadPrompts() {
   seedDefaultsIfEmpty();
+}
+
+function findPrompt(id) {
+  return prompts.find((p) => p.id === id);
+}
+
+function upsertPrompts(updated) {
+  setPrompts(updated);
+  persistPrompts();
+}
+
+export function createPrompt({ title, body, tags = [], tip = '' }) {
+  if (!title?.trim()) throw new Error('Title is required');
+  if (!body?.trim()) throw new Error('Body is required');
+  const prompt = {
+    id: crypto.randomUUID(),
+    title: title.trim(),
+    body: body.trim(),
+    tags: tags.map((t) => t.toLowerCase()),
+    author: CURRENT_USER,
+    tip,
+    createdAt: now(),
+    updatedAt: now(),
+    reactions: { like: { count: 0, users: [] }, celebrate: { count: 0, users: [] } },
+    comments: [],
+    saves: [],
+    forks: 0,
+  };
+  upsertPrompts([prompt, ...prompts]);
+  setSelectedPromptId(prompt.id);
+  recordActivity({ type: 'create', message: `${prompt.title} published`, actor: CURRENT_USER.name });
+  return prompt;
+}
+
+export function updatePrompt(id, updates) {
+  const target = findPrompt(id);
+  if (!target) throw new Error('Prompt not found');
+  const next = prompts.map((p) =>
+    p.id === id
+      ? {
+          ...p,
+          ...updates,
+          updatedAt: now(),
+        }
+      : p,
+  );
+  upsertPrompts(next);
+  recordActivity({ type: 'update', message: `${target.title} updated`, actor: CURRENT_USER.name });
+}
+
+export function deletePrompt(id) {
+  const target = findPrompt(id);
+  if (!target) return;
+  upsertPrompts(prompts.filter((p) => p.id !== id));
+  recordActivity({ type: 'delete', message: `${target.title} removed`, actor: CURRENT_USER.name });
+}
+
+export function toggleReaction(promptId, type = 'like', userId = CURRENT_USER.id) {
+  const prompt = findPrompt(promptId);
+  if (!prompt) return null;
+  const reaction = prompt.reactions?.[type] ?? { count: 0, users: [] };
+  const users = new Set(reaction.users || []);
+  if (users.has(userId)) {
+    users.delete(userId);
+  } else {
+    users.add(userId);
+  }
+  const count = users.size;
+  const next = prompts.map((p) =>
+    p.id === promptId ? { ...p, reactions: { ...p.reactions, [type]: { count, users: [...users] } } } : p,
+  );
+  upsertPrompts(next);
+  recordActivity({ type: 'reaction', message: `${type} on ${prompt.title}`, actor: CURRENT_USER.name });
+  return count;
+}
+
+export function addComment(promptId, body, parentId = null) {
+  if (!body?.trim()) throw new Error('Comment is required');
+  const prompt = findPrompt(promptId);
+  if (!prompt) throw new Error('Prompt not found');
+  const comment = {
+    id: crypto.randomUUID(),
+    author: CURRENT_USER,
+    body: body.trim(),
+    parentId,
+    createdAt: now(),
+  };
+  const next = prompts.map((p) => (p.id === promptId ? { ...p, comments: [comment, ...p.comments] } : p));
+  upsertPrompts(next);
+  recordActivity({ type: 'comment', message: `Commented on ${prompt.title}`, actor: CURRENT_USER.name });
+  return comment;
+}
+
+function getTopPromptsBy(field = 'createdAt', limit = 3) {
+  const sorted = [...prompts].sort((a, b) => (b[field] || 0) - (a[field] || 0));
+  return sorted.slice(0, limit);
 }
 
 const workflows = [
@@ -225,6 +350,336 @@ function setupThemeToggle() {
     applyTheme(next);
     localStorage.setItem('theme', next);
   });
+}
+
+function formatDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function renderTagRow(container, tags = []) {
+  if (!container) return;
+  container.innerHTML = '';
+  tags.forEach((tag) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip';
+    chip.textContent = tag;
+    chip.dataset.tag = tag;
+    container.appendChild(chip);
+  });
+}
+
+const feedState = { page: 1, pageSize: 5, selectedTag: null, query: '', sort: 'newest' };
+
+function getFilteredPrompts() {
+  const normalizedQuery = feedState.query.toLowerCase();
+  const filtered = prompts.filter((prompt) => {
+    const matchesTag = feedState.selectedTag ? prompt.tags.includes(feedState.selectedTag) : true;
+    const matchesQuery = normalizedQuery
+      ? [prompt.title, prompt.body, prompt.author?.name, prompt.tip].some((field) =>
+          (field || '').toLowerCase().includes(normalizedQuery),
+        )
+      : true;
+    return matchesTag && matchesQuery;
+  });
+
+  const sorted = filtered.sort((a, b) => {
+    if (feedState.sort === 'reactions') {
+      const reactionsA = (a.reactions?.like?.count || 0) + (a.reactions?.celebrate?.count || 0);
+      const reactionsB = (b.reactions?.like?.count || 0) + (b.reactions?.celebrate?.count || 0);
+      return reactionsB - reactionsA;
+    }
+    if (feedState.sort === 'updated') {
+      return (b.updatedAt || 0) - (a.updatedAt || 0);
+    }
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+  return sorted;
+}
+
+function renderPaginationStatus(total) {
+  const el = document.getElementById('pagination-status');
+  if (!el) return;
+  const showing = Math.min(feedState.page * feedState.pageSize, total);
+  el.textContent = `${showing} of ${total} prompts`;
+}
+
+function renderPromptCard(prompt) {
+  const card = document.createElement('article');
+  card.className = 'prompt-card';
+  card.dataset.id = prompt.id;
+  const likeCount = prompt.reactions?.like?.count || 0;
+  const celebrateCount = prompt.reactions?.celebrate?.count || 0;
+  const combinedTags = prompt.tags?.map((tag) => `<span class="pill">${tag}</span>`).join('') || '';
+  card.innerHTML = `
+    <header class="prompt-card__header">
+      <div>
+        <p class="eyebrow">${prompt.author?.name || 'Unknown'} • ${formatDate(prompt.createdAt)}</p>
+        <h3>${prompt.title}</h3>
+        <p class="muted">${prompt.tip || 'Add what works to guide collaborators.'}</p>
+      </div>
+      <div class="prompt-actions">
+        <button class="ghost" data-action="share" aria-label="Copy prompt">Copy</button>
+        <button class="ghost" data-action="open">Details</button>
+      </div>
+    </header>
+    <p class="prompt-card__body">${prompt.body.slice(0, 200)}${prompt.body.length > 200 ? '…' : ''}</p>
+    <div class="prompt-meta">${combinedTags}</div>
+    <div class="prompt-footer">
+      <div class="reactions" role="group" aria-label="Reactions">
+        <button class="chip" data-action="react" data-type="like">👍 ${likeCount}</button>
+        <button class="chip" data-action="react" data-type="celebrate">🎉 ${celebrateCount}</button>
+      </div>
+      <div class="prompt-cta">
+        <button class="secondary" data-action="save">Save</button>
+        <button class="ghost" data-action="fork">Fork</button>
+        <button class="ghost" data-action="comment">Comment</button>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function renderPromptFeed() {
+  const list = document.getElementById('prompt-list');
+  const loadMore = document.getElementById('load-more');
+  if (!list) return;
+  list.innerHTML = '';
+  const filtered = getFilteredPrompts();
+  const start = 0;
+  const end = feedState.page * feedState.pageSize;
+  const page = filtered.slice(start, end);
+  page.forEach((prompt) => list.appendChild(renderPromptCard(prompt)));
+  renderPaginationStatus(filtered.length);
+  if (loadMore) loadMore.disabled = end >= filtered.length;
+  renderDiscoveryPanels();
+}
+
+function renderDiscoveryPanels() {
+  const topList = document.getElementById('top-prompts');
+  const trending = document.getElementById('trending-tags');
+  const recent = document.getElementById('recent-prompts');
+  const activity = document.getElementById('activity-feed');
+  if (topList) {
+    topList.innerHTML = '';
+    getTopPromptsBy('createdAt', 3).forEach((p) => {
+      const li = document.createElement('li');
+      li.textContent = `${p.title} · 👍 ${p.reactions?.like?.count ?? 0}`;
+      topList.appendChild(li);
+    });
+  }
+  if (recent) {
+    recent.innerHTML = '';
+    getTopPromptsBy('updatedAt', 3).forEach((p) => {
+      const li = document.createElement('li');
+      li.textContent = `${p.title} · Updated ${formatDate(p.updatedAt)}`;
+      recent.appendChild(li);
+    });
+  }
+  if (trending) {
+    const allTags = prompts.flatMap((p) => p.tags || []);
+    const counts = allTags.reduce((acc, tag) => ({ ...acc, [tag]: (acc[tag] || 0) + 1 }), {});
+    const sortedTags = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([tag]) => tag);
+    renderTagRow(trending, sortedTags);
+  }
+  if (activity) {
+    activity.innerHTML = '';
+    activityFeed.slice(0, 6).forEach((entry) => {
+      const li = document.createElement('li');
+      li.textContent = `${entry.actor}: ${entry.message}`;
+      activity.appendChild(li);
+    });
+  }
+}
+
+function handlePromptActions(event) {
+  const target = event.target.closest('[data-action]');
+  if (!target) return;
+  const card = target.closest('.prompt-card');
+  const modal = target.closest('#prompt-modal');
+  const promptId = card?.dataset.id || modal?.dataset.promptId;
+  const action = target.dataset.action;
+  if (!promptId) return;
+  if (action === 'react') {
+    toggleReaction(promptId, target.dataset.type);
+    renderPromptFeed();
+    openPromptDetail(promptId);
+  }
+  if (action === 'share') {
+    navigator.clipboard?.writeText(findPrompt(promptId)?.body || '');
+    target.textContent = 'Copied';
+    setTimeout(() => (target.textContent = 'Copy'), 800);
+  }
+  if (action === 'save') {
+    updatePrompt(promptId, { saves: [...new Set([...(findPrompt(promptId)?.saves || []), CURRENT_USER.id])] });
+    renderPromptFeed();
+  }
+  if (action === 'fork') {
+    const prompt = findPrompt(promptId);
+    updatePrompt(promptId, { forks: (prompt?.forks || 0) + 1 });
+    renderPromptFeed();
+  }
+  if (action === 'open' || action === 'comment') {
+    openPromptDetail(promptId);
+  }
+}
+
+function renderCommentList(prompt) {
+  const list = document.getElementById('comment-list');
+  if (!list) return;
+  const commentsByParent = prompt.comments.reduce((acc, comment) => {
+    const key = comment.parentId || 'root';
+    acc[key] = acc[key] || [];
+    acc[key].push(comment);
+    return acc;
+  }, {});
+  list.innerHTML = '';
+
+  function renderThread(parentId = null, indent = 0) {
+    const items = commentsByParent[parentId || 'root'] || [];
+    items.forEach((comment) => {
+      const li = document.createElement('li');
+      li.className = 'comment';
+      li.style.paddingLeft = `${indent * 12}px`;
+      li.innerHTML = `
+        <div class="comment-meta">${comment.author?.name || 'Anon'} • ${formatDate(comment.createdAt)}</div>
+        <p>${comment.body}</p>
+        <button class="ghost" data-reply="${comment.id}">Reply</button>
+      `;
+      list.appendChild(li);
+      renderThread(comment.id, indent + 1);
+    });
+  }
+
+  renderThread();
+}
+
+function openPromptDetail(promptId) {
+  const prompt = findPrompt(promptId);
+  const modal = document.getElementById('prompt-modal');
+  if (!prompt || !modal) return;
+  modal.hidden = false;
+  modal.dataset.promptId = promptId;
+  modal.querySelector('#modal-title').textContent = prompt.title;
+  modal.querySelector('#modal-body').textContent = prompt.body;
+  modal.querySelector('#modal-tip').textContent = prompt.tip || 'Add notes about what works best.';
+  modal.querySelector('#modal-meta').textContent = `${prompt.author?.name || 'Unknown'} • ${formatDate(prompt.createdAt)}`;
+  renderTagRow(modal.querySelector('#modal-tags'), prompt.tags);
+  modal.querySelector('#modal-reactions').textContent = `👍 ${prompt.reactions?.like?.count || 0} · 🎉 ${
+    prompt.reactions?.celebrate?.count || 0
+  }`;
+  renderCommentList(prompt);
+  const related = document.getElementById('related-prompts');
+  if (related) {
+    related.innerHTML = '';
+    const relatedPrompts = prompts.filter((p) => p.id !== promptId && p.tags.some((tag) => prompt.tags.includes(tag))).slice(0, 3);
+    relatedPrompts.forEach((p) => {
+      const li = document.createElement('li');
+      li.textContent = `${p.title} · ${p.tags.slice(0, 2).join(', ')}`;
+      related.appendChild(li);
+    });
+  }
+  modal.querySelector('#comment-form')?.setAttribute('data-prompt', promptId);
+}
+
+function closePromptDetail() {
+  const modal = document.getElementById('prompt-modal');
+  if (modal) modal.hidden = true;
+}
+
+function setupPromptComposer() {
+  const form = document.getElementById('prompt-form');
+  if (!form) return;
+  const preview = document.getElementById('prompt-preview');
+  const previewBody = document.getElementById('prompt-preview-body');
+  const status = document.getElementById('prompt-status');
+  const titleInput = document.getElementById('prompt-title');
+  const bodyInput = document.getElementById('prompt-body');
+  const tagInput = document.getElementById('prompt-tags');
+  const tipInput = document.getElementById('prompt-tip');
+
+  document.getElementById('prompt-preview-btn')?.addEventListener('click', () => {
+    previewBody.textContent = `${titleInput.value}\n\n${bodyInput.value}`;
+    preview.hidden = false;
+  });
+
+  document.getElementById('prompt-reset')?.addEventListener('click', () => {
+    form.reset();
+    preview.hidden = true;
+    status.textContent = '';
+  });
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    document.getElementById('error-title').textContent = '';
+    document.getElementById('error-body').textContent = '';
+    try {
+      const prompt = createPrompt({
+        title: titleInput.value,
+        body: bodyInput.value,
+        tags: normalizeTags(tagInput.value),
+        tip: tipInput.value,
+      });
+      status.textContent = 'Prompt submitted with optimistic update.';
+      form.reset();
+      preview.hidden = true;
+      renderPromptFeed();
+      openPromptDetail(prompt.id);
+    } catch (error) {
+      status.textContent = 'Please fix the errors below.';
+      if (error.message.includes('Title')) document.getElementById('error-title').textContent = error.message;
+      if (error.message.includes('Body')) document.getElementById('error-body').textContent = error.message;
+    }
+  });
+}
+
+function setupPromptFeed() {
+  const list = document.getElementById('prompt-list');
+  if (!list) return;
+  loadPrompts();
+  renderTagRow(document.getElementById('tag-filter'), Array.from(new Set(prompts.flatMap((p) => p.tags || []))));
+  renderPromptFeed();
+  document.getElementById('prompt-search')?.addEventListener('input', (event) => {
+    feedState.query = event.target.value;
+    feedState.page = 1;
+    renderPromptFeed();
+  });
+  document.getElementById('prompt-sort')?.addEventListener('change', (event) => {
+    feedState.sort = event.target.value;
+    renderPromptFeed();
+  });
+  document.getElementById('tag-filter')?.addEventListener('click', (event) => {
+    if (event.target.matches('.chip')) {
+      feedState.selectedTag = event.target.dataset.tag;
+      renderPromptFeed();
+    }
+  });
+  list.addEventListener('click', handlePromptActions);
+  document.getElementById('load-more')?.addEventListener('click', () => {
+    feedState.page += 1;
+    renderPromptFeed();
+  });
+  document.getElementById('prompt-modal-close')?.addEventListener('click', closePromptDetail);
+  document.getElementById('comment-form')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const promptId = event.target.getAttribute('data-prompt');
+    const body = event.target.comment?.value || '';
+    addComment(promptId, body, event.target.parentId?.value || null);
+    event.target.reset();
+    renderPromptFeed();
+    openPromptDetail(promptId);
+  });
+  document.getElementById('comment-list')?.addEventListener('click', (event) => {
+    const replyId = event.target.dataset.reply;
+    if (!replyId) return;
+    const form = document.getElementById('comment-form');
+    form.parentId.value = replyId;
+    form.comment.focus();
+  });
+  document.getElementById('prompt-modal')?.addEventListener('click', handlePromptActions);
 }
 
 const sandboxState = {
@@ -413,6 +868,7 @@ function setupSandboxPage() {
 
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
+    loadPrompts();
     if (document.getElementById('module-grid')) {
       renderModules();
       setupFilters();
@@ -421,6 +877,8 @@ if (typeof document !== 'undefined') {
       setupMetrics();
       setupForm();
     }
+    setupPromptComposer();
+    setupPromptFeed();
     setupThemeToggle();
     setupSandboxPage();
   });

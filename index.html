@@ -27,6 +27,92 @@
   </header>
 
   <main>
+    <section class="panel prompts" id="prompts">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Prompt workspace</p>
+          <h2>Shareable prompt feed</h2>
+          <p class="muted">Create, edit, react, and discuss with your team. Search, sort, and save prompts to your workspace.</p>
+        </div>
+        <div class="prompt-controls">
+          <label class="search" for="prompt-search">
+            <span class="sr-only">Search prompts</span>
+            <input id="prompt-search" type="search" placeholder="Search prompts or @mention" />
+          </label>
+          <select id="prompt-sort" aria-label="Sort prompts">
+            <option value="newest">Newest</option>
+            <option value="reactions">Most reacted</option>
+            <option value="updated">Recently updated</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="prompt-layout">
+        <div class="prompt-composer" aria-label="Prompt composer">
+          <h3>Compose prompt</h3>
+          <form id="prompt-form" novalidate>
+            <label>
+              <span>Title</span>
+              <input id="prompt-title" type="text" name="title" required placeholder="Summarize API logs for anomalies" />
+              <small class="error" id="error-title" aria-live="polite"></small>
+            </label>
+            <label>
+              <span>Body</span>
+              <textarea id="prompt-body" name="body" rows="5" required placeholder="You are an observability expert…"></textarea>
+              <small class="error" id="error-body" aria-live="polite"></small>
+            </label>
+            <label>
+              <span>Tags (comma separated)</span>
+              <input id="prompt-tags" type="text" name="tags" placeholder="ops, observability, incidents" />
+            </label>
+            <label>
+              <span>What works</span>
+              <input id="prompt-tip" type="text" name="tip" placeholder="Add runbook links and severity scale" />
+            </label>
+            <div class="composer-actions">
+              <div class="inline">
+                <button class="primary" type="submit" id="prompt-submit">Submit</button>
+                <button class="secondary" type="button" id="prompt-preview-btn">Preview</button>
+                <button class="ghost" type="button" id="prompt-reset">Reset</button>
+              </div>
+              <div class="status" id="prompt-status" aria-live="polite"></div>
+            </div>
+            <div class="preview" id="prompt-preview" hidden>
+              <div class="preview-header">Preview</div>
+              <div class="preview-body" id="prompt-preview-body"></div>
+            </div>
+          </form>
+        </div>
+
+        <div class="prompt-feed" aria-live="polite">
+          <div class="feed-toolbar">
+            <div class="chip-row" id="tag-filter" aria-label="Filter by tag"></div>
+            <div class="pill" id="pagination-status">Loading…</div>
+          </div>
+          <div id="prompt-list" class="prompt-list"></div>
+          <button class="secondary" id="load-more" type="button">Load more</button>
+        </div>
+
+        <aside class="prompt-sidebar" aria-label="Discovery">
+          <div class="card">
+            <h4>Top prompts this week</h4>
+            <ul id="top-prompts" class="sidebar-list"></ul>
+          </div>
+          <div class="card">
+            <h4>Trending tags</h4>
+            <div id="trending-tags" class="chip-row"></div>
+          </div>
+          <div class="card">
+            <h4>Recently updated</h4>
+            <ul id="recent-prompts" class="sidebar-list"></ul>
+          </div>
+          <div class="card">
+            <h4>Activity</h4>
+            <ul id="activity-feed" class="sidebar-list"></ul>
+          </div>
+        </aside>
+      </div>
+    </section>
     <section class="hero" id="hero">
       <div class="hero-text">
         <p class="eyebrow">Developer-first prompt lab</p>
@@ -230,6 +316,46 @@
       </div>
     </section>
   </main>
+
+  <section class="modal" id="prompt-modal" hidden aria-label="Prompt detail">
+    <div class="modal-content">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow" id="modal-meta"></p>
+          <h3 id="modal-title"></h3>
+        </div>
+        <button class="ghost" id="prompt-modal-close" aria-label="Close">✕</button>
+      </header>
+      <p class="muted" id="modal-tip"></p>
+      <div class="pill-row" id="modal-tags"></div>
+      <p id="modal-body"></p>
+      <div class="modal-footer">
+        <span id="modal-reactions"></span>
+        <div class="inline">
+          <button class="secondary" data-action="react" data-type="like">👍 Like</button>
+          <button class="ghost" data-action="react" data-type="celebrate">🎉 Celebrate</button>
+          <button class="ghost" data-action="share">Copy prompt</button>
+        </div>
+      </div>
+      <div class="comments">
+        <h4>Threaded comments</h4>
+        <form id="comment-form" data-prompt="" aria-label="Add comment">
+          <input type="hidden" name="parentId" />
+          <label class="sr-only" for="comment-input">Comment</label>
+          <textarea id="comment-input" name="comment" rows="3" placeholder="Add a markdown-friendly comment"></textarea>
+          <div class="inline">
+            <button class="primary" type="submit">Comment</button>
+            <button class="ghost" type="button" onclick="document.getElementById('comment-form').reset()">Reset</button>
+          </div>
+        </form>
+        <ul id="comment-list" class="comment-list"></ul>
+      </div>
+      <div class="related">
+        <h4>Related prompts</h4>
+        <ul id="related-prompts"></ul>
+      </div>
+    </div>
+  </section>
 
   <footer class="footer">
     <p>Tracknamic AI Lab · Built for product-minded engineers.</p>
