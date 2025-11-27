@@ -3,7 +3,8 @@ Tracknamic AI-lab for software engineers.
 
 ## Prompt workspace
 
-The landing page now includes a shareable prompt workspace with a composer, searchable feed, reactions, threaded comments, and a discovery sidebar (top prompts, trending tags, and recent updates). Prompts are persisted locally in `localStorage` with metadata for author, timestamps, reactions, saves, forks, and comments.
+The landing page now includes a shareable prompt workspace with a composer, searchable feed, reactions, threaded comments, and a
+discovery sidebar (top prompts, trending tags, and recent updates). Prompts are persisted locally in `localStorage` with metadata for author, timestamps, reactions, saves, forks, and comments.
 
 ## How the Launch Sandbox works
 
@@ -15,6 +16,34 @@ The sandbox experience lives at `sandbox.html` and provides a lightweight playgr
 - **Saving drafts**: The **Save as prompt** button seeds a minimal local prompt library (backed by `localStorage` with defaults) and writes the current experiment as a draft so it can be persisted later via a real backend. Session badges in the hero card show the total saved prompts and the last run time. 【F:script.js†L212-L254】【F:script.js†L70-L104】
 
 This flow keeps the UI responsive and testable while leaving clear seams to replace the stubbed AI call and local persistence with real services.
+
+## Backend setup (PostgreSQL + Prisma)
+
+1. Ensure Docker (or a local PostgreSQL server) is available, then start the database:
+   ```bash
+docker compose up -d
+```
+2. Copy the environment template and adjust credentials if needed:
+   ```bash
+cp .env.example .env
+```
+3. Install dependencies, run migrations, and seed the development data:
+   ```bash
+npm install
+npx prisma migrate dev --name init
+npx prisma db seed
+```
+4. Explore and edit data with Prisma Studio:
+   ```bash
+npx prisma studio
+```
+5. Start the API server and fetch prompt JSON (e.g., prompt id 1):
+   ```bash
+npm start
+curl http://localhost:3000/prompts/1
+```
+
+The schema covers users, prompts, tags, reactions, comments, and sandbox runs so future product features can pull real records instead of local-only data.
 
 ## Run locally
 
