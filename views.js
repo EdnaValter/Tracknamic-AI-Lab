@@ -297,6 +297,10 @@ const sandboxView = `
             <span>User prompt</span>
             <textarea id="user-input" rows="6" placeholder="Ask the model anything..."></textarea>
           </label>
+          <label class="field">
+            <span>Input</span>
+            <textarea id="input-text" rows="4" placeholder="Paste relevant context or data for the model..."></textarea>
+          </label>
           <div class="grid grid-2">
             <label class="field">
               <span>Model</span>
