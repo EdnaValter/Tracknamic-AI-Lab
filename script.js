@@ -221,8 +221,10 @@ function applyTheme(theme) {
   document.body.classList.toggle('light', theme === 'light');
 }
 
-function setupThemeToggle() {
+export function setupThemeToggle() {
   const btn = document.getElementById('theme-toggle');
+  if (!btn || btn.dataset.bound === 'true') return;
+  btn.dataset.bound = 'true';
   const saved = localStorage.getItem('theme');
   if (saved) applyTheme(saved);
   btn.addEventListener('click', () => {
@@ -746,12 +748,15 @@ function setupSandboxPage() {
   });
 }
 
-if (typeof document !== 'undefined') {
-  document.addEventListener('DOMContentLoaded', () => {
-    loadPrompts();
-    setupPromptComposer();
-    setupPromptFeed();
-    setupThemeToggle();
-    setupSandboxPage();
-  });
+export function initializeWorkspaceUI() {
+  loadPrompts();
+  setupPromptComposer();
+  setupPromptFeed();
+  setupThemeToggle();
+}
+
+export function initializeSandboxUI() {
+  loadPrompts();
+  setupThemeToggle();
+  setupSandboxPage();
 }
