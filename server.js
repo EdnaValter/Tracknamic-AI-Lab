@@ -1,17 +1,34 @@
 import 'dotenv/config';
 import express from 'express';
 import OpenAI from 'openai';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const app = express();
 const port = process.env.PORT || 3000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
 app.use(express.json());
+app.use(express.static(__dirname));
+
+app.get(['/', '/index.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get(['/sandbox', '/sandbox.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'sandbox.html'));
+});
+
+app.get(['/lab', '/lab/:id', '/lab/:id/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'lab.html'));
+});
 
 const DEFAULT_SANDBOX_USER = {
   email: 'casey@tracknamic.com',
@@ -83,10 +100,79 @@ app.get('/prompts/:id', async (req, res) => {
       return res.status(404).json({ error: 'Prompt not found' });
     }
 
-    return res.json(prompt);
+    const reactionSummary = prompt.reactions.reduce(
+      (acc, reaction) => ({
+        ...acc,
+        [reaction.type]: (acc[reaction.type] ?? 0) + 1,
+      }),
+      {},
+    );
+
+    const { reactions, ...rest } = prompt;
+
+    return res.json({ ...rest, reactionSummary });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'Unexpected error retrieving prompt' });
+  }
+});
+
+app.get('/api/prompts', async (req, res) => {
+  const { q, tag } = req.query ?? {};
+
+  const filters = [];
+  if (q?.trim()) {
+    filters.push({
+      OR: [
+        { title: { contains: q.trim(), mode: 'insensitive' } },
+        { problem: { contains: q.trim(), mode: 'insensitive' } },
+      ],
+    });
+  }
+
+  if (tag?.trim()) {
+    filters.push({
+      tags: { some: { tag: { name: { equals: tag.trim(), mode: 'insensitive' } } } },
+    });
+  }
+
+  try {
+    const where = filters.length > 0 ? { AND: filters } : undefined;
+    const [prompts, tags] = await Promise.all([
+      prisma.prompt.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          author: true,
+          tags: { include: { tag: true } },
+          reactions: true,
+          _count: { select: { comments: true } },
+        },
+      }),
+      prisma.tag.findMany({ orderBy: { name: 'asc' } }),
+    ]);
+
+    const mapped = prompts.map((prompt) => {
+      const reactionSummary = prompt.reactions.reduce(
+        (acc, reaction) => ({
+          ...acc,
+          [reaction.type]: (acc[reaction.type] ?? 0) + 1,
+        }),
+        {},
+      );
+
+      const { reactions, ...rest } = prompt;
+
+      return {
+        ...rest,
+        reactionSummary,
+      };
+    });
+
+    return res.json({ prompts: mapped, tags });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to load prompts' });
   }
 });
 
