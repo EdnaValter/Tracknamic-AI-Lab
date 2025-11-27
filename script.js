@@ -574,12 +574,45 @@ export function formatTimestamp(date = new Date()) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export async function runSandboxExperiment({ system, prompt, model, temperature, maxTokens }) {
-  const latency = 800 + Math.random() * 800;
-  await new Promise((resolve) => setTimeout(resolve, latency));
-  const header = system ? `System instructions respected.\n\n` : '';
-  const body = `${header}This is a simulated response — AI keys are not configured yet.\n\nModel: ${model}\nTemperature: ${temperature}\nTokens: ~${maxTokens}\n\nEcho:\n${prompt}`;
-  return { text: body };
+function mapRunRecord(run = {}) {
+  return {
+    id: run.id ?? crypto.randomUUID(),
+    system: run.systemText ?? run.system ?? '',
+    prompt: run.promptText ?? run.prompt ?? '',
+    input: run.inputText ?? run.input ?? '',
+    response: run.outputText ?? run.response ?? '',
+    model: run.model ?? 'gpt-4o',
+    temperature: typeof run.temperature === 'number' ? run.temperature : 0.2,
+    maxTokens: typeof run.maxTokens === 'number' ? run.maxTokens : 512,
+    createdAt: run.createdAt ? new Date(run.createdAt).getTime() : Date.now(),
+  };
+}
+
+export async function runSandboxExperiment({ system, prompt, input, model, temperature, maxTokens }) {
+  const response = await fetch('/api/sandbox/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemText: system,
+      promptText: prompt,
+      inputText: input,
+      model,
+      temperature,
+      maxTokens,
+      user: CURRENT_USER,
+    }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload?.error || 'Failed to reach sandbox service');
+  }
+
+  const run = payload.run
+    ? mapRunRecord({ ...payload.run, systemText: system, model, temperature, maxTokens })
+    : mapRunRecord({ system, prompt, input, response: payload.text, model, temperature, maxTokens });
+
+  return { text: payload.text ?? run.response, run };
 }
 
 function setSandboxStatus(message, tone = 'muted') {
@@ -592,15 +625,17 @@ function setSandboxStatus(message, tone = 'muted') {
 function getSandboxFormValues() {
   const system = document.getElementById('system-input')?.value ?? '';
   const prompt = document.getElementById('user-input')?.value ?? '';
+  const input = document.getElementById('input-text')?.value ?? '';
   const model = document.getElementById('model-select')?.value ?? 'gpt-4o';
   const temperature = Number(document.getElementById('temperature-input')?.value ?? 0.2);
   const maxTokens = Number(document.getElementById('max-tokens-input')?.value ?? 512);
-  return { system, prompt, model, temperature, maxTokens };
+  return { system, prompt, input, model, temperature, maxTokens };
 }
 
 function hydrateForm(run) {
   document.getElementById('system-input').value = run.system || '';
   document.getElementById('user-input').value = run.prompt || '';
+  document.getElementById('input-text').value = run.input || '';
   document.getElementById('model-select').value = run.model;
   document.getElementById('temperature-input').value = run.temperature;
   document.getElementById('temperature-value').textContent = Number(run.temperature).toFixed(2);
@@ -616,7 +651,8 @@ function renderHistory() {
     const button = document.createElement('button');
     button.className = 'history-item';
     button.type = 'button';
-    const preview = run.prompt.length > 42 ? `${run.prompt.slice(0, 42)}…` : run.prompt;
+    const previewSource = run.prompt || run.promptText || '';
+    const preview = previewSource.length > 42 ? `${previewSource.slice(0, 42)}…` : previewSource;
     button.innerHTML = `<span class="history-title">${preview || 'Untitled prompt'}</span><span class="history-meta">${formatTimestamp(new Date(run.createdAt))} · ${run.model}</span>`;
     button.addEventListener('click', () => {
       hydrateForm(run);
@@ -667,22 +703,19 @@ async function handleRun(event) {
   setLoading(true);
   setSandboxStatus('Sending prompt to the AI layer…');
   try {
-    const response = await runSandboxExperiment(values);
-    const run = {
-      id: crypto.randomUUID(),
-      ...values,
-      response: response.text,
-      createdAt: Date.now(),
-    };
-    sandboxState.activeResponse = response.text;
+    const { text, run } = await runSandboxExperiment(values);
+    sandboxState.activeResponse = text;
     sandboxState.runs.unshift(run);
+    if (sandboxState.runs.length > 20) {
+      sandboxState.runs = sandboxState.runs.slice(0, 20);
+    }
     renderHistory();
     renderResponse();
     updateSessionBadges(run.createdAt);
     setSandboxStatus('Experiment completed. Review the response below.', 'success');
   } catch (error) {
     console.error(error);
-    setSandboxStatus('Failed to reach the AI service. Please try again.', 'danger');
+    setSandboxStatus(error?.message || 'Failed to reach the AI service. Please try again.', 'danger');
   } finally {
     setLoading(false);
   }
@@ -691,6 +724,7 @@ async function handleRun(event) {
 function handleReset() {
   document.getElementById('system-input').value = '';
   document.getElementById('user-input').value = '';
+  document.getElementById('input-text').value = '';
   document.getElementById('model-select').value = 'gpt-4o';
   document.getElementById('temperature-input').value = 0.2;
   document.getElementById('temperature-value').textContent = '0.20';
@@ -726,6 +760,28 @@ function handleSaveAsPrompt() {
   setSandboxStatus('Saved as a prompt draft locally. Wire this into your prompts backend to persist.', 'success');
 }
 
+async function loadSandboxHistory() {
+  try {
+    const response = await fetch('/api/sandbox/runs');
+    if (!response.ok) throw new Error('Failed to fetch runs');
+    const runs = await response.json();
+    sandboxState.runs = Array.isArray(runs) ? runs.map(mapRunRecord) : [];
+    renderHistory();
+    if (sandboxState.runs[0]) {
+      sandboxState.activeResponse = sandboxState.runs[0].response;
+      hydrateForm(sandboxState.runs[0]);
+      renderResponse();
+      setSandboxStatus('Restored your latest sandbox run.');
+    }
+    if (!sandboxState.runs.length) {
+      setSandboxStatus('Waiting for your first experiment.');
+    }
+  } catch (error) {
+    console.error(error);
+    setSandboxStatus('Unable to load previous runs.', 'danger');
+  }
+}
+
 function setupSandboxPage() {
   const shell = document.getElementById('sandbox-app');
   if (!shell) return;
@@ -733,6 +789,8 @@ function setupSandboxPage() {
   updateSessionBadges();
   renderHistory();
   renderResponse();
+  setSandboxStatus('Loading recent runs…');
+  loadSandboxHistory();
   document.getElementById('launch-btn')?.addEventListener('click', handleRun);
   document.getElementById('reset-btn')?.addEventListener('click', handleReset);
   document.getElementById('save-prompt-btn')?.addEventListener('click', handleSaveAsPrompt);

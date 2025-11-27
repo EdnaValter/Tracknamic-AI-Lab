@@ -73,3 +73,83 @@ test('seedDefaultsIfEmpty only seeds once and persists', async () => {
   const second = seedDefaultsIfEmpty();
   assert.strictEqual(second, false);
 });
+
+test('runSandboxExperiment posts payload and maps response', async () => {
+  const { runSandboxExperiment } = await sandboxModulePromise;
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url, options = {}) => {
+      assert.strictEqual(url, '/api/sandbox/run');
+      const body = JSON.parse(options.body);
+      assert.strictEqual(body.systemText, 'sys');
+      assert.strictEqual(body.promptText, 'prompt');
+      assert.strictEqual(body.inputText, 'input');
+      assert.strictEqual(body.model, 'gpt-4o');
+      assert.strictEqual(body.temperature, 0.3);
+      assert.strictEqual(body.maxTokens, 256);
+      return {
+        ok: true,
+        async json() {
+          return {
+            text: 'response',
+            run: {
+              id: '1',
+              promptText: 'prompt',
+              inputText: 'input',
+              outputText: 'response',
+              createdAt: '2024-01-01T00:00:00.000Z',
+            },
+          };
+        },
+      };
+    };
+
+    const { text, run } = await runSandboxExperiment({
+      system: 'sys',
+      prompt: 'prompt',
+      input: 'input',
+      model: 'gpt-4o',
+      temperature: 0.3,
+      maxTokens: 256,
+    });
+
+    assert.strictEqual(text, 'response');
+    assert.strictEqual(run.prompt, 'prompt');
+    assert.strictEqual(run.input, 'input');
+    assert.strictEqual(run.response, 'response');
+    assert.strictEqual(run.model, 'gpt-4o');
+    assert.strictEqual(run.temperature, 0.3);
+    assert.strictEqual(run.maxTokens, 256);
+    assert.strictEqual(run.createdAt, new Date('2024-01-01T00:00:00.000Z').getTime());
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('runSandboxExperiment surfaces API errors', async () => {
+  const { runSandboxExperiment } = await sandboxModulePromise;
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => ({
+      ok: false,
+      async json() {
+        return { error: 'boom' };
+      },
+    });
+
+    await assert.rejects(
+      () =>
+        runSandboxExperiment({
+          system: '',
+          prompt: 'prompt',
+          input: '',
+          model: 'gpt-4o',
+          temperature: 0.2,
+          maxTokens: 128,
+        }),
+      /boom/,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
