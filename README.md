@@ -24,3 +24,9 @@ npm test
 ```
 
 Open `index.html` in your browser to explore the prompt workspace and feed interactions (search, filters, reactions, comments) with local persistence.
+
+## Authentication
+
+- Visit `login.html` to sign in with a Tracknamic email (`@tracknamic.com` or `@tracknamic.ai`).
+- Authenticated teammates can access `index.html`, `sandbox.html`, and the new `lab.html` overview. Unauthenticated visitors are redirected back to `login.html`.
+- The in-browser auth layer stores a user record (id, name, email) to tag new prompts and expose current-user data to the UI and API helpers.

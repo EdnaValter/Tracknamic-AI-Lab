@@ -1,5 +1,8 @@
+import { getCurrentUser } from './auth.js';
+
 export const STORAGE_KEY = 'ai-lab-prompts';
-export const CURRENT_USER = { id: 'demo-user', name: 'Casey Demo' };
+const FALLBACK_USER = { id: 'demo-user', name: 'Casey Demo', email: 'casey@tracknamic.com' };
+export const CURRENT_USER = getCurrentUser?.() ?? FALLBACK_USER;
 
 const now = () => Date.now();
 
