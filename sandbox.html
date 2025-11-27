@@ -13,12 +13,19 @@
   <header class="top-bar">
     <div class="logo">Tracknamic AI Lab</div>
     <nav class="nav" aria-label="Primary navigation">
-      <a href="index.html#ai">AI Lab</a>
+      <a href="lab.html">AI Lab</a>
       <a href="sandbox.html" aria-current="page">Sandbox</a>
     </nav>
     <div class="actions">
       <button id="theme-toggle" class="ghost" aria-label="Toggle theme">🌗</button>
       <a class="primary" href="sandbox.html">Launch Sandbox</a>
+      <div id="user-chip" class="user-chip" hidden>
+        <div class="user-text">
+          <span id="user-name"></span>
+          <span id="user-email" class="muted small"></span>
+        </div>
+        <button id="logout-button" class="ghost small">Log out</button>
+      </div>
     </div>
   </header>
 
@@ -138,6 +145,12 @@
       <a href="sandbox.html">Sandbox</a>
     </div>
   </footer>
+  <script type="module">
+    import { renderUserControls, requireAuth } from './auth.js';
+
+    requireAuth('/login.html');
+    renderUserControls();
+  </script>
   <script type="module" src="script.js"></script>
 </body>
 </html>
