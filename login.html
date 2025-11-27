@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login · Tracknamic AI Lab</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="login-body">
+  <main class="login-shell">
+    <section class="login-card">
+      <div>
+        <p class="eyebrow">Tracknamic access</p>
+        <h1>Sign in with your company email</h1>
+        <p class="muted">Only teammates with a Tracknamic address can launch the AI Lab and sandbox.</p>
+      </div>
+      <form id="login-form" class="login-form">
+        <label class="field">
+          <span>Email</span>
+          <input id="email" name="email" type="email" placeholder="casey@tracknamic.com" required />
+        </label>
+        <label class="field">
+          <span>Name <span class="muted">(optional)</span></span>
+          <input id="name" name="name" type="text" placeholder="Casey Demo" />
+        </label>
+        <div class="login-actions">
+          <button class="primary" type="submit">Continue</button>
+          <p id="login-status" class="muted small" role="status"></p>
+        </div>
+      </form>
+    </section>
+  </main>
+  <script type="module">
+    import { authenticateUser, getCurrentUser } from './auth.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const returnTo = params.get('returnTo') || '/';
+    const statusEl = document.getElementById('login-status');
+
+    const existing = getCurrentUser();
+    if (existing) {
+      window.location.replace(returnTo);
+    }
+
+    document.getElementById('login-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const email = document.getElementById('email').value;
+      const name = document.getElementById('name').value;
+      statusEl.textContent = '';
+      try {
+        const user = authenticateUser({ email, name });
+        statusEl.textContent = `Welcome ${user.name}. Redirecting…`;
+        window.location.replace(returnTo || '/');
+      } catch (error) {
+        statusEl.textContent = error.message;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -441,3 +441,80 @@ body.light {
     grid-template-columns: 1fr;
   }
 }
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.user-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.user-chip .small {
+  font-size: 0.85rem;
+}
+
+.login-body {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at top left, rgba(92, 173, 255, 0.2), transparent 40%),
+    radial-gradient(circle at bottom right, rgba(167, 120, 255, 0.2), transparent 35%),
+    var(--bg);
+}
+
+.login-shell {
+  width: min(520px, 90vw);
+}
+
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  display: grid;
+  gap: 1rem;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.1);
+}
+
+.login-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.login-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lab-panel {
+  margin: 2rem auto;
+  padding: 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  max-width: 1200px;
+}
+
+.lab-grid {
+  margin-top: 1rem;
+}
+
+.code-block {
+  display: block;
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.95rem;
+}
