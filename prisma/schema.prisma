@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReactionType {
+  LIKE
+  BOOKMARK
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  createdAt DateTime  @default(now())
+  prompts   Prompt[]
+  reactions Reaction[]
+  comments  Comment[]
+  sandboxRuns SandboxRun[]
+}
+
+model Prompt {
+  id            Int          @id @default(autoincrement())
+  title         String
+  problem       String
+  context       String
+  promptText    String
+  exampleInput  String?
+  exampleOutput String?
+  reflection    String?
+  authorId      Int
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  author     User      @relation(fields: [authorId], references: [id])
+  tags       PromptTag[]
+  reactions  Reaction[]
+  comments   Comment[]
+}
+
+model Tag {
+  id    Int         @id @default(autoincrement())
+  name  String      @unique
+  prompts PromptTag[]
+}
+
+model PromptTag {
+  promptId Int
+  tagId    Int
+
+  prompt Prompt @relation(fields: [promptId], references: [id])
+  tag    Tag    @relation(fields: [tagId], references: [id])
+
+  @@id([promptId, tagId])
+}
+
+model Reaction {
+  id       Int          @id @default(autoincrement())
+  userId   Int
+  promptId Int
+  type     ReactionType
+
+  user   User   @relation(fields: [userId], references: [id])
+  prompt Prompt @relation(fields: [promptId], references: [id])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  promptId  Int
+  body      String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  prompt Prompt @relation(fields: [promptId], references: [id])
+}
+
+model SandboxRun {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  promptText String
+  inputText  String
+  outputText String
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}

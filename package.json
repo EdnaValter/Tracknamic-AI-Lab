@@ -2,12 +2,27 @@
   "name": "tracknamic-ai-lab",
   "version": "1.0.0",
   "description": "Tracknamic AI-lab for software engineers.",
-  "main": "script.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate": "prisma generate",
+    "prisma:seed": "prisma db seed",
     "test": "node --test"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@prisma/client": "^5.19.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "prisma": "^5.19.1"
+  }
 }
