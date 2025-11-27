@@ -144,21 +144,3 @@ export function getUserApiShape() {
   const { id, name, email } = user;
   return { id, name, email };
 }
-
-// Expose helpers for quick inspection in the browser console.
-if (typeof window !== 'undefined') {
-  window.aiLabAuth = {
-    authenticateUser,
-    getCurrentUser,
-    getUserApiShape,
-    logoutUser,
-    renderUserControls,
-    requireAuth,
-  };
-
-  window.logCurrentUser = () => {
-    const user = getCurrentUser();
-    console.info('[ai-lab] Current user', user);
-    return user;
-  };
-}
