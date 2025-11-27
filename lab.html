@@ -10,68 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <header class="top-bar">
-    <div class="logo">Tracknamic AI Lab</div>
-    <nav class="nav" aria-label="Primary navigation">
-      <a href="index.html">Workspace</a>
-      <a href="lab.html" aria-current="page">AI Lab</a>
-      <a href="sandbox.html">Sandbox</a>
-    </nav>
-    <div class="actions">
-      <div id="user-chip" class="user-chip" hidden>
-        <div class="user-text">
-          <span id="user-name"></span>
-          <span id="user-email" class="muted small"></span>
-        </div>
-        <button id="logout-button" class="ghost small">Log out</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="panel lab-panel">
-    <div class="section-header">
-      <div>
-        <p class="eyebrow">Internal tools</p>
-        <h1>AI Lab overview</h1>
-        <p class="muted">Authenticated teammates can explore the workspace, launch the sandbox, and access this lab guide.</p>
-      </div>
-      <div class="pill">Tracknamic SSO required</div>
-    </div>
-    <div class="grid grid-2 lab-grid">
-      <div class="card">
-        <h3>Workspace</h3>
-        <p class="muted">Draft, preview, and publish prompts to the shared feed with reactions and comments.</p>
-        <a class="secondary" href="index.html">Go to workspace</a>
-      </div>
-      <div class="card">
-        <h3>Launch Sandbox</h3>
-        <p class="muted">Run quick experiments with system instructions, temperature, and token controls.</p>
-        <a class="secondary" href="sandbox.html">Open sandbox</a>
-      </div>
-      <div class="card">
-        <h3>User identity</h3>
-        <p class="muted">Backend keeps a Tracknamic user record so prompts and runs show real ownership.</p>
-        <code class="code-block" id="user-json"></code>
-      </div>
-      <div class="card">
-        <h3>Access control</h3>
-        <p class="muted">Unauthenticated visitors are redirected to login before viewing any lab routes.</p>
-        <p class="pill">Protected: /, /lab, /sandbox</p>
-      </div>
-    </div>
-  </main>
-
-  <script type="module">
-    import { getUserApiShape, renderUserControls, requireAuth } from './auth.js';
-
-    requireAuth('/login.html');
-    renderUserControls();
-
-    const userJson = document.getElementById('user-json');
-    const user = getUserApiShape();
-    if (userJson && user) {
-      userJson.textContent = JSON.stringify(user, null, 2);
-    }
-  </script>
+  <div id="app-root"></div>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
