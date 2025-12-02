@@ -123,6 +123,7 @@ main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; display: flex
 .filters { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip { padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; }
 .chip.active { background: var(--accent); color: #0b1020; border-color: transparent; }
+.chip.solid { background: var(--surface-3); border-color: var(--border-subtle); }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; }
 .grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
@@ -554,91 +555,27 @@ body.light {
   gap: 0.75rem;
 }
 
-.prompting-guide {
-  margin-top: 1rem;
-}
-
-.guide-grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-.guide-card {
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  background: var(--surface-2);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
-  display: grid;
+.lab-controls {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
-}
-
-.guide-card ul {
-  margin: 0;
-  padding-left: 1.25rem;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.guide-badge {
-  display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  font-weight: 700;
-  padding: 0.35rem 0.65rem;
-  border-radius: 999px;
-  font-size: 0.95rem;
-  width: fit-content;
-  background: var(--surface);
+  justify-content: flex-end;
 }
 
-.guide-role {
-  border-top: 4px solid #e74645;
+.active-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
-.guide-role .guide-badge {
-  color: #e74645;
-}
-
-.guide-clarity {
-  border-top: 4px solid #5c7cff;
-}
-
-.guide-clarity .guide-badge {
-  color: #5c7cff;
-}
-
-.guide-specificity {
-  border-top: 4px solid #b15cff;
-}
-
-.guide-specificity .guide-badge {
-  color: #b15cff;
-}
-
-.guide-iterative {
-  border-top: 4px solid #f7b801;
-}
-
-.guide-iterative .guide-badge {
-  color: #d89300;
-}
-
-.guide-context {
-  border-top: 4px solid #0fb9b1;
-}
-
-.guide-context .guide-badge {
-  color: #0fb9b1;
-}
-
-.guide-reasoning {
-  border-top: 4px solid #3dd598;
-}
-
-.guide-reasoning .guide-badge {
-  color: #1f9f63;
+.lab-controls select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .prompt-grid {
