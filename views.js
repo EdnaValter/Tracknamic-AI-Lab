@@ -266,6 +266,60 @@ const labView = `
       <section class="lab-section" id="prompt-detail" hidden aria-live="polite"></section>
     </div>
   </section>
+  <section class="panel" id="lab-prompts">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">AI Lab library</p>
+        <h2>Saved sandbox prompts</h2>
+        <p class="muted">Review newly saved prompts, browse tags, and open the detail page to share.</p>
+      </div>
+      <div class="pill" id="lab-summary">Loading…</div>
+    </div>
+    <div class="lab-layout">
+      <div class="lab-list" id="lab-prompt-list" aria-live="polite"></div>
+      <div class="lab-detail" id="lab-prompt-detail">
+        <div id="lab-detail-card" class="card" hidden>
+          <div class="section-header compact">
+            <div>
+              <p class="eyebrow" id="lab-detail-meta"></p>
+              <h3 id="lab-detail-title"></h3>
+              <div class="pill-row" id="lab-detail-tags"></div>
+            </div>
+            <button class="ghost" type="button" id="lab-back-btn">Back to list</button>
+          </div>
+          <div class="lab-detail-body">
+            <div>
+              <p class="muted small">Problem / Goal</p>
+              <p id="lab-detail-problem"></p>
+            </div>
+            <div>
+              <p class="muted small">Context</p>
+              <p id="lab-detail-context"></p>
+            </div>
+            <div>
+              <p class="muted small">Prompt</p>
+              <pre class="code-block" id="lab-detail-prompt"></pre>
+            </div>
+            <div class="grid grid-2">
+              <div>
+                <p class="muted small">Example input</p>
+                <pre class="code-block" id="lab-detail-input"></pre>
+              </div>
+              <div>
+                <p class="muted small">Example output</p>
+                <pre class="code-block" id="lab-detail-output"></pre>
+              </div>
+            </div>
+            <div id="lab-detail-reflection-block" hidden>
+              <p class="muted small">Reflection</p>
+              <p id="lab-detail-reflection"></p>
+            </div>
+          </div>
+        </div>
+        <div id="lab-detail-empty" class="muted">Select a prompt to view its details.</div>
+      </div>
+    </div>
+  </section>
 `;
 
 const sandboxView = `
@@ -360,7 +414,7 @@ const sandboxView = `
             <h2>Results & history</h2>
             <p class="muted">Review the latest output or restore a previous run.</p>
           </div>
-          <button class="secondary" id="save-prompt-btn" type="button">Save as prompt</button>
+          <button class="secondary" id="save-prompt-btn" type="button">Save as prompt in AI Lab</button>
         </div>
         <div class="response-card" aria-live="polite">
           <div class="response-meta">
@@ -378,6 +432,69 @@ const sandboxView = `
           <div id="history-list" class="history-list" aria-live="polite"></div>
         </div>
       </div>
+    </div>
+  </section>
+  <section class="modal" id="lab-save-modal" hidden aria-label="Save sandbox prompt to AI Lab">
+    <div class="modal-content modal-lg">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">Publish to AI Lab</p>
+          <h3>Turn this sandbox run into a prompt</h3>
+        </div>
+        <button class="ghost" id="lab-save-close" type="button" aria-label="Close">✕</button>
+      </header>
+      <form id="lab-save-form" class="lab-save-form">
+        <label class="field">
+          <span>Title <span class="muted">(required)</span></span>
+          <input id="lab-save-title" name="title" type="text" required placeholder="Summarize logs for anomaly triage" />
+        </label>
+        <div class="grid grid-2">
+          <label class="field">
+            <span>Problem / Goal</span>
+            <textarea id="lab-save-problem" name="problem" rows="3" required placeholder="What are you trying to solve?"></textarea>
+          </label>
+          <label class="field">
+            <span>Context</span>
+            <textarea id="lab-save-context" name="context" rows="3" required placeholder="What context should the model know?"></textarea>
+          </label>
+        </div>
+        <label class="field">
+          <span>Prompt text</span>
+          <textarea id="lab-save-prompt" name="promptText" rows="4" required></textarea>
+        </label>
+        <div class="grid grid-2">
+          <label class="field">
+            <span>Example input</span>
+            <textarea id="lab-save-example-input" name="exampleInput" rows="3" placeholder="Sample payload or question"></textarea>
+          </label>
+          <label class="field">
+            <span>Example output</span>
+            <textarea id="lab-save-example-output" name="exampleOutput" rows="3" placeholder="Model output to expect"></textarea>
+          </label>
+        </div>
+        <label class="field">
+          <span>Tags <span class="muted">(multi-select or add new)</span></span>
+          <div class="tag-input" id="lab-tags">
+            <div id="lab-tag-pills" class="pill-row"></div>
+            <div class="inline">
+              <input id="lab-tag-input" type="text" list="lab-tag-options" placeholder="Add a tag and press enter" />
+              <datalist id="lab-tag-options"></datalist>
+              <button class="ghost" id="lab-tag-add" type="button">Add tag</button>
+            </div>
+          </div>
+        </label>
+        <label class="field">
+          <span>Reflection <span class="muted">(optional)</span></span>
+          <textarea id="lab-save-reflection" name="reflection" rows="3" placeholder="Notes about what worked and why"></textarea>
+        </label>
+        <div class="modal-footer">
+          <div id="lab-save-status" class="muted" role="status"></div>
+          <div class="inline">
+            <button class="ghost" type="button" id="lab-save-cancel">Cancel</button>
+            <button class="primary" type="submit">Publish to AI Lab</button>
+          </div>
+        </div>
+      </form>
     </div>
   </section>
   </div>

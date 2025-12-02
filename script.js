@@ -140,6 +140,8 @@ export const DEFAULT_PROMPTS = [
 let prompts = [];
 let selectedPromptId = null;
 let activityFeed = [];
+const labSaveState = { selectedTags: ['sandbox'], availableTags: [] };
+const labPromptState = { prompts: [], activeId: null };
 
 /**
  * Normalize a comma-delimited tag string into an array of trimmed values.
@@ -151,6 +153,83 @@ export function normalizeTags(raw = '') {
     .split(',')
     .map((tag) => tag.trim())
     .filter(Boolean);
+}
+
+function normalizeLabTag(tag = '') {
+  return tag
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-');
+}
+
+function renderSelectedTags() {
+  const container = document.getElementById('lab-tag-pills');
+  if (!container) return;
+  container.innerHTML = '';
+  labSaveState.selectedTags.forEach((tag) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip';
+    chip.dataset.tag = tag;
+    chip.textContent = `#${tag}`;
+    chip.title = 'Remove tag';
+    container.appendChild(chip);
+  });
+}
+
+function renderTagOptions() {
+  const options = document.getElementById('lab-tag-options');
+  if (!options) return;
+  options.innerHTML = '';
+  labSaveState.availableTags.forEach((tag) => {
+    const option = document.createElement('option');
+    option.value = tag;
+    options.appendChild(option);
+  });
+}
+
+function addSelectedTag(tag) {
+  const normalized = normalizeLabTag(tag);
+  if (!normalized) return;
+  if (!labSaveState.selectedTags.includes(normalized)) {
+    labSaveState.selectedTags.push(normalized);
+    renderSelectedTags();
+  }
+}
+
+function removeSelectedTag(tag) {
+  labSaveState.selectedTags = labSaveState.selectedTags.filter((t) => t !== tag);
+  renderSelectedTags();
+}
+
+function bindTagInputs() {
+  const input = document.getElementById('lab-tag-input');
+  const addBtn = document.getElementById('lab-tag-add');
+  if (!input || input.dataset.bound === 'true') return;
+  input.dataset.bound = 'true';
+  const submitTag = () => {
+    addSelectedTag(input.value);
+    input.value = '';
+  };
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      submitTag();
+    }
+  });
+  addBtn?.addEventListener('click', submitTag);
+  document.getElementById('lab-tag-pills')?.addEventListener('click', (event) => {
+    const tag = event.target.dataset?.tag;
+    if (tag) {
+      removeSelectedTag(tag);
+    }
+  });
+}
+
+function setAvailableLabTags(tags = []) {
+  const normalized = tags.map(normalizeLabTag).filter(Boolean);
+  labSaveState.availableTags = Array.from(new Set([...labSaveState.availableTags, ...normalized]));
+  renderTagOptions();
 }
 
 export function getPrompts() {
@@ -1052,29 +1131,55 @@ function handleReset() {
   setSandboxStatus('Inputs have been reset.');
 }
 
-function handleSaveAsPrompt() {
-  if (!sandboxState.activeResponse) {
-    setSandboxStatus('Run an experiment first to save it.', 'danger');
-    return;
-  }
-  loadPrompts();
+function resetLabSaveState(defaultTags = ['sandbox']) {
+  labSaveState.selectedTags = [...defaultTags];
+  renderSelectedTags();
+}
+
+function hydrateSaveFormFromSandbox() {
+  const modal = document.getElementById('lab-save-modal');
+  if (!modal) return false;
   const values = getSandboxFormValues();
-  const titlePreview = values.prompt.trim().slice(0, 32) || 'Sandbox Experiment';
-  const newPrompt = {
-    id: `sandbox-${Date.now()}`,
-    title: `Sandbox Experiment – ${titlePreview}`,
-    body: `${values.system ? `System:\n${values.system}\n\n` : ''}Prompt:\n${values.prompt}`,
-    tags: ['sandbox'],
-    model: values.model,
-    temperature: values.temperature.toFixed(2),
-    savedAt: Date.now(),
-  };
-  const updated = [...getPrompts(), newPrompt];
-  setPrompts(updated);
-  persistPrompts();
-  setSelectedPromptId(newPrompt.id);
-  updateSessionBadges(Date.now());
-  setSandboxStatus('Saved as a prompt draft locally. Wire this into your prompts backend to persist.', 'success');
+  const lastRun = sandboxState.runs[0];
+  if (!values.prompt.trim() && !lastRun?.prompt) {
+    setSandboxStatus('Please provide a user prompt before saving to AI Lab.', 'danger');
+    return false;
+  }
+  if (!sandboxState.activeResponse && !lastRun?.response) {
+    setSandboxStatus('Run the sandbox before saving to AI Lab so we can include example output.', 'danger');
+    return false;
+  }
+
+  const titleSeed = values.prompt.trim() || lastRun?.prompt || 'Sandbox experiment';
+  document.getElementById('lab-save-title').value = `Sandbox – ${titleSeed.slice(0, 60)}`;
+  document.getElementById('lab-save-problem').value = `Capture the sandbox run for "${titleSeed}" so teammates can reuse it.`;
+  document.getElementById('lab-save-context').value = values.system || 'Context captured from sandbox system instructions.';
+  document.getElementById('lab-save-prompt').value = values.prompt || lastRun?.prompt || '';
+  document.getElementById('lab-save-example-input').value = lastRun?.input || values.input || '';
+  document.getElementById('lab-save-example-output').value = sandboxState.activeResponse || lastRun?.response || '';
+  document.getElementById('lab-save-reflection').value = '';
+  document.getElementById('lab-save-status').textContent = 'Ready to publish this run to AI Lab.';
+  resetLabSaveState();
+  bindTagInputs();
+  modal.hidden = false;
+  return true;
+}
+
+async function prefetchLabTags() {
+  try {
+    const response = await fetch('/api/prompts');
+    if (!response.ok) return;
+    const promptsFromLab = await response.json();
+    const tags = promptsFromLab.flatMap((prompt) => prompt.tags?.map((t) => t.tag?.name) || []);
+    setAvailableLabTags(tags);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function handleSaveAsPrompt() {
+  await prefetchLabTags();
+  hydrateSaveFormFromSandbox();
 }
 
 function handleCopyResponse() {
@@ -1110,6 +1215,215 @@ async function loadSandboxHistory() {
     console.error(error);
     setSandboxStatus('Unable to load previous runs.', 'danger');
   }
+}
+
+async function publishPromptToLab(event) {
+  event?.preventDefault?.();
+  const form = document.getElementById('lab-save-form');
+  if (!form) return;
+  const status = document.getElementById('lab-save-status');
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const title = form.title.value.trim();
+  const problem = form.problem.value.trim();
+  const context = form.context.value.trim();
+  const promptText = form.promptText.value.trim();
+  const exampleInput = form.exampleInput.value.trim();
+  const exampleOutput = form.exampleOutput.value.trim();
+  const reflection = form.reflection.value.trim();
+
+  if (!title || !problem || !context || !promptText) {
+    status.textContent = 'Title, problem, context, and prompt text are required.';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  status.textContent = 'Publishing prompt to AI Lab…';
+  try {
+    const response = await fetch('/api/prompts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        problem,
+        context,
+        promptText,
+        exampleInput,
+        exampleOutput,
+        reflection: reflection || null,
+        tags: labSaveState.selectedTags,
+        user: CURRENT_USER,
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload?.error || 'Failed to save prompt.');
+    }
+
+    status.textContent = 'Redirecting to AI Lab…';
+    document.getElementById('lab-save-modal').hidden = true;
+    window.location.href = `/lab/${payload.id}`;
+  } catch (error) {
+    console.error(error);
+    status.textContent = error.message;
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+function closeSaveModal(event) {
+  event?.preventDefault?.();
+  const modal = document.getElementById('lab-save-modal');
+  if (!modal) return;
+  modal.hidden = true;
+  document.getElementById('lab-save-status').textContent = '';
+}
+
+function getLabPromptIdFromPath() {
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  if (parts[0] !== 'lab') return null;
+  const id = Number(parts[1]);
+  return Number.isNaN(id) ? null : id;
+}
+
+async function fetchLabPrompts() {
+  const response = await fetch('/api/prompts');
+  if (!response.ok) throw new Error('Unable to load AI Lab prompts.');
+  const promptsFromApi = await response.json();
+  const tags = promptsFromApi.flatMap((prompt) => prompt.tags?.map((t) => t.tag?.name) || []);
+  setAvailableLabTags(tags);
+  return promptsFromApi;
+}
+
+async function fetchLabPromptDetail(id) {
+  const response = await fetch(`/api/prompts/${id}`);
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload?.error || 'Prompt not found');
+  }
+  return payload;
+}
+
+function renderLabSummary() {
+  const pill = document.getElementById('lab-summary');
+  if (!pill) return;
+  if (!labPromptState.prompts.length) {
+    pill.textContent = 'No prompts yet';
+    return;
+  }
+  const tagCount = new Set(labPromptState.prompts.flatMap((prompt) => prompt.tags?.map((t) => t.tag?.name) || [])).size;
+  pill.textContent = `${labPromptState.prompts.length} prompts · ${tagCount || 0} tags`;
+}
+
+function renderLabList() {
+  const container = document.getElementById('lab-prompt-list');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!labPromptState.prompts.length) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'Save a sandbox run to see it here.';
+    container.appendChild(empty);
+    return;
+  }
+
+  labPromptState.prompts.forEach((prompt) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'card lab-list-item';
+    card.dataset.id = prompt.id;
+    card.innerHTML = `
+      <div class="lab-list-meta">
+        <p class="eyebrow">${new Date(prompt.createdAt).toLocaleDateString()}</p>
+        <h4>${prompt.title}</h4>
+        <p class="muted">${prompt.problem}</p>
+      </div>
+      <div class="pill-row">${(prompt.tags || [])
+        .map((t) => `<span class="pill">${t.tag?.name || ''}</span>`)
+        .join('')}</div>
+    `;
+    card.addEventListener('click', () => {
+      labPromptState.activeId = prompt.id;
+      window.history.pushState({}, '', `/lab/${prompt.id}`);
+      renderLabDetail(prompt);
+    });
+    container.appendChild(card);
+  });
+}
+
+function renderLabDetail(prompt) {
+  const card = document.getElementById('lab-detail-card');
+  const empty = document.getElementById('lab-detail-empty');
+  if (!card || !empty) return;
+  if (!prompt) {
+    card.hidden = true;
+    empty.hidden = false;
+    return;
+  }
+  card.hidden = false;
+  empty.hidden = true;
+
+  document.getElementById('lab-detail-title').textContent = prompt.title;
+  document.getElementById('lab-detail-meta').textContent = `${new Date(prompt.createdAt).toLocaleDateString()} · ${
+    prompt.author?.name || 'Unknown'
+  }`;
+  document.getElementById('lab-detail-problem').textContent = prompt.problem;
+  document.getElementById('lab-detail-context').textContent = prompt.context;
+  document.getElementById('lab-detail-prompt').textContent = prompt.promptText;
+  document.getElementById('lab-detail-input').textContent = prompt.exampleInput || '—';
+  document.getElementById('lab-detail-output').textContent = prompt.exampleOutput || '—';
+
+  const reflectionBlock = document.getElementById('lab-detail-reflection-block');
+  if (prompt.reflection) {
+    document.getElementById('lab-detail-reflection').textContent = prompt.reflection;
+    reflectionBlock.hidden = false;
+  } else {
+    reflectionBlock.hidden = true;
+  }
+
+  const tagRow = document.getElementById('lab-detail-tags');
+  tagRow.innerHTML = '';
+  (prompt.tags || []).forEach((t) => {
+    const pill = document.createElement('span');
+    pill.className = 'pill';
+    pill.textContent = t.tag?.name || '';
+    tagRow.appendChild(pill);
+  });
+}
+
+async function hydrateLabView() {
+  const list = document.getElementById('lab-prompt-list');
+  if (!list) return;
+  try {
+    labPromptState.prompts = await fetchLabPrompts();
+    renderLabList();
+    renderLabSummary();
+    const idFromPath = getLabPromptIdFromPath();
+    if (idFromPath) {
+      const promptFromList = labPromptState.prompts.find((p) => p.id === idFromPath);
+      if (promptFromList) {
+        renderLabDetail(promptFromList);
+      } else {
+        const detail = await fetchLabPromptDetail(idFromPath);
+        renderLabDetail(detail);
+      }
+    } else {
+      renderLabDetail(null);
+    }
+  } catch (error) {
+    console.error(error);
+    list.innerHTML = `<p class="muted">${error.message}</p>`;
+  }
+}
+
+function setupLabPage() {
+  const labRoot = document.getElementById('lab-prompts');
+  if (!labRoot) return;
+  hydrateLabView();
+  document.getElementById('lab-back-btn')?.addEventListener('click', () => {
+    window.history.pushState({}, '', '/lab');
+    renderLabDetail(null);
+  });
 }
 
 function setupSandboxPage() {
@@ -1171,4 +1485,9 @@ export function initializeSandboxUI() {
   loadPrompts();
   setupThemeToggle();
   setupSandboxPage();
+}
+
+export function initializeLabUI() {
+  setupThemeToggle();
+  setupLabPage();
 }
