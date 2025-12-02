@@ -171,6 +171,25 @@ const workspaceView = `
       </div>
     </div>
   </section>
+  <section class="modal" id="delete-modal" hidden aria-label="Delete prompt confirmation">
+    <div class="modal-content">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">Delete shared prompt</p>
+          <h3 id="delete-modal-title">Confirm removal</h3>
+        </div>
+        <button class="ghost" type="button" id="delete-modal-close" aria-label="Close delete prompt modal">✕</button>
+      </header>
+      <p class="muted" id="delete-modal-body">Are you sure you want to delete this prompt from the workspace?</p>
+      <div class="modal-footer">
+        <div class="inline">
+          <button class="ghost" type="button" id="delete-cancel">Keep prompt</button>
+          <button class="primary danger" type="button" id="delete-confirm">Delete prompt</button>
+        </div>
+        <p class="muted small">This removes the prompt for everyone in the shared feed.</p>
+      </div>
+    </div>
+  </section>
   <section class="modal" id="prompt-modal" hidden aria-label="Prompt detail">
     <div class="modal-content">
       <header class="modal-header">
@@ -189,6 +208,7 @@ const workspaceView = `
           <button class="secondary" data-action="react" data-type="like">👍 Like</button>
           <button class="ghost" data-action="react" data-type="celebrate">🎉 Celebrate</button>
           <button class="ghost" data-action="share">Copy prompt</button>
+          <button class="ghost danger" data-action="delete">Delete</button>
         </div>
       </div>
       <div class="comments">
