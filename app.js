@@ -2,6 +2,7 @@ import { renderLayout, routes } from './layout.js';
 import { getViewTemplate } from './views.js';
 import { getUserApiShape, renderUserControls, requireAuth } from './auth.js';
 import { initializeSandboxUI, initializeWorkspaceUI, setupThemeToggle } from './script.js';
+import { initializeLabUI } from './lab.js';
 
 function resolveRouteFromPath() {
   const path = window.location.pathname;
@@ -21,11 +22,7 @@ function mountView(mainEl, route) {
     initializeSandboxUI();
   }
   if (route === 'lab') {
-    const userJson = document.getElementById('user-json');
-    const user = getUserApiShape?.();
-    if (user && userJson) {
-      userJson.textContent = JSON.stringify(user, null, 2);
-    }
+    initializeLabUI();
   }
 }
 
