@@ -75,6 +75,7 @@ button.primary { background: linear-gradient(135deg, var(--accent), var(--accent
 button.primary:hover { transform: translateY(-1px); }
 button.secondary { background: var(--surface); color: var(--text); padding: 10px 16px; border: 1px solid var(--border); }
 button.ghost { background: transparent; color: var(--text); padding: 8px 12px; border: 1px solid var(--border); }
+button.danger { background: var(--danger); color: #0b1020; border-color: transparent; }
 
 main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; display: flex; flex-direction: column; gap: 40px; }
 

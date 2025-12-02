@@ -140,6 +140,7 @@ export const DEFAULT_PROMPTS = [
 let prompts = [];
 let selectedPromptId = null;
 let activityFeed = [];
+let deleteTargetId = null;
 
 /**
  * Normalize a comma-delimited tag string into an array of trimmed values.
@@ -395,6 +396,7 @@ function renderPromptCard(prompt) {
       <div class="prompt-actions">
         <button class="ghost" data-action="share" aria-label="Copy prompt">Copy</button>
         <button class="ghost" data-action="open">Details</button>
+        <button class="ghost" data-action="delete">Delete</button>
       </div>
     </header>
     <p class="prompt-card__body">${prompt.body.slice(0, 200)}${prompt.body.length > 200 ? '…' : ''}</p>
@@ -499,6 +501,9 @@ function handlePromptActions(event) {
   if (action === 'open' || action === 'comment') {
     openPromptDetail(promptId);
   }
+  if (action === 'delete') {
+    openDeletePromptModal(promptId);
+  }
 }
 
 function renderCommentList(prompt) {
@@ -562,6 +567,37 @@ function openPromptDetail(promptId) {
 function closePromptDetail() {
   const modal = document.getElementById('prompt-modal');
   if (modal) modal.hidden = true;
+}
+
+function openDeletePromptModal(promptId) {
+  const modal = document.getElementById('delete-modal');
+  const prompt = findPrompt(promptId);
+  if (!modal || !prompt) return;
+  deleteTargetId = promptId;
+  modal.hidden = false;
+  const title = modal.querySelector('#delete-modal-title');
+  const body = modal.querySelector('#delete-modal-body');
+  if (title) title.textContent = `Delete "${prompt.title}"?`;
+  if (body) body.textContent = `Are you sure you want to remove "${prompt.title}" from the shared feed? This action cannot be undone.`;
+}
+
+function closeDeletePromptModal() {
+  const modal = document.getElementById('delete-modal');
+  deleteTargetId = null;
+  if (modal) modal.hidden = true;
+}
+
+function confirmDeletePrompt() {
+  if (!deleteTargetId) return;
+  const targetId = deleteTargetId;
+  deletePrompt(targetId);
+  if (getSelectedPromptId() === targetId) {
+    setSelectedPromptId(prompts[0]?.id ?? null);
+  }
+  feedState.page = 1;
+  renderPromptFeed();
+  closePromptDetail();
+  closeDeletePromptModal();
 }
 
 function setupPromptComposer() {
@@ -664,6 +700,9 @@ function setupPromptFeed() {
     form.comment.focus();
   });
   document.getElementById('prompt-modal')?.addEventListener('click', handlePromptActions);
+  document.getElementById('delete-confirm')?.addEventListener('click', confirmDeletePrompt);
+  document.getElementById('delete-cancel')?.addEventListener('click', closeDeletePromptModal);
+  document.getElementById('delete-modal-close')?.addEventListener('click', closeDeletePromptModal);
 }
 
 const labState = { prompts: [], selectedId: null };
