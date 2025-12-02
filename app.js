@@ -1,7 +1,8 @@
 import { renderLayout, routes } from './layout.js';
 import { getViewTemplate } from './views.js';
 import { getUserApiShape, renderUserControls, requireAuth } from './auth.js';
-import { initializeLabUI, initializeLibraryUI, initializeSandboxUI, initializeWorkspaceUI, setupThemeToggle } from './script.js';
+import { initializeSandboxUI, initializeWorkspaceUI, setupThemeToggle } from './script.js';
+import { initializeLabUI } from './lab.js';
 
 function resolveRouteFromPath() {
   const path = window.location.pathname;
@@ -23,9 +24,6 @@ function mountView(mainEl, route) {
   }
   if (route === 'lab') {
     initializeLabUI();
-  }
-  if (route === 'library') {
-    initializeLibraryUI();
   }
 }
 

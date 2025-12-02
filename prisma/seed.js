@@ -104,18 +104,26 @@ async function main() {
   await prisma.sandboxRun.create({
     data: {
       userId: alice.id,
+      systemText: 'You are an algorithms assistant.',
       promptText: 'Reverse a linked list',
       inputText: '[1,2,3,4]',
       outputText: '[4,3,2,1]',
+      model: 'gpt-4.1',
+      temperature: 0.15,
+      maxTokens: 256,
     },
   });
 
   await prisma.sandboxRun.create({
     data: {
       userId: bob.id,
+      systemText: 'You are a concise product summary bot.',
       promptText: 'Summarize product updates',
       inputText: 'New login flow and dashboard tweaks',
       outputText: 'Users can log in with email; dashboard cards reorganized.',
+      model: 'gpt-4o',
+      temperature: 0.35,
+      maxTokens: 384,
     },
   });
 }

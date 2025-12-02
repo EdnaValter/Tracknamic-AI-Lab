@@ -1,17 +1,34 @@
 import 'dotenv/config';
 import express from 'express';
 import OpenAI from 'openai';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const app = express();
 const port = process.env.PORT || 3000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
 app.use(express.json());
+app.use(express.static(__dirname));
+
+app.get(['/', '/index.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get(['/sandbox', '/sandbox.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'sandbox.html'));
+});
+
+app.get(['/lab', '/lab/:id', '/lab/:id/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'lab.html'));
+});
 
 const DEFAULT_SANDBOX_USER = {
   email: 'casey@tracknamic.com',
@@ -127,7 +144,17 @@ app.get('/prompts/:id', async (req, res) => {
       return res.status(404).json({ error: 'Prompt not found' });
     }
 
-    return res.json(prompt);
+    const reactionSummary = prompt.reactions.reduce(
+      (acc, reaction) => ({
+        ...acc,
+        [reaction.type]: (acc[reaction.type] ?? 0) + 1,
+      }),
+      {},
+    );
+
+    const { reactions, ...rest } = prompt;
+
+    return res.json({ ...rest, reactionSummary });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'Unexpected error retrieving prompt' });
@@ -135,113 +162,61 @@ app.get('/prompts/:id', async (req, res) => {
 });
 
 app.get('/api/prompts', async (req, res) => {
+  const { q, tag } = req.query ?? {};
+
+  const filters = [];
+  if (q?.trim()) {
+    filters.push({
+      OR: [
+        { title: { contains: q.trim(), mode: 'insensitive' } },
+        { problem: { contains: q.trim(), mode: 'insensitive' } },
+      ],
+    });
+  }
+
+  if (tag?.trim()) {
+    filters.push({
+      tags: { some: { tag: { name: { equals: tag.trim(), mode: 'insensitive' } } } },
+    });
+  }
+
   try {
-    const actor = await ensureUser(deriveActorFromRequest(req));
-    const prompts = await prisma.prompt.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        author: true,
-        tags: { include: { tag: true } },
-        reactions: true,
-        comments: true,
-      },
+    const where = filters.length > 0 ? { AND: filters } : undefined;
+    const [prompts, tags] = await Promise.all([
+      prisma.prompt.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          author: true,
+          tags: { include: { tag: true } },
+          reactions: true,
+          _count: { select: { comments: true } },
+        },
+      }),
+      prisma.tag.findMany({ orderBy: { name: 'asc' } }),
+    ]);
+
+    const mapped = prompts.map((prompt) => {
+      const reactionSummary = prompt.reactions.reduce(
+        (acc, reaction) => ({
+          ...acc,
+          [reaction.type]: (acc[reaction.type] ?? 0) + 1,
+        }),
+        {},
+      );
+
+      const { reactions, ...rest } = prompt;
+
+      return {
+        ...rest,
+        reactionSummary,
+      };
     });
 
-    return res.json(prompts.map((prompt) => mapPrompt(prompt, actor.id)));
+    return res.json({ prompts: mapped, tags });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'Failed to load prompts' });
-  }
-});
-
-app.get('/api/prompts/:id', async (req, res) => {
-  const promptId = Number(req.params.id);
-  if (Number.isNaN(promptId)) {
-    return res.status(400).json({ error: 'Prompt id must be a number' });
-  }
-
-  try {
-    const actor = await ensureUser(deriveActorFromRequest(req));
-    const prompt = await prisma.prompt.findUnique({
-      where: { id: promptId },
-      include: {
-        author: true,
-        tags: { include: { tag: true } },
-        reactions: true,
-        comments: true,
-      },
-    });
-
-    if (!prompt) {
-      return res.status(404).json({ error: 'Prompt not found' });
-    }
-
-    return res.json(mapPrompt(prompt, actor.id));
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Failed to load prompt detail' });
-  }
-});
-
-app.post('/api/reactions', async (req, res) => {
-  const { promptId, type } = req.body || {};
-  if (!promptId || !['like', 'bookmark'].includes(String(type).toLowerCase())) {
-    return res.status(400).json({ error: 'promptId and valid reaction type are required' });
-  }
-
-  try {
-    const actor = await ensureUser(deriveActorFromRequest(req));
-    const reactionType = String(type).toUpperCase();
-    await prisma.reaction.upsert({
-      where: { userId_promptId_type: { userId: actor.id, promptId: Number(promptId), type: reactionType } },
-      update: {},
-      create: { userId: actor.id, promptId: Number(promptId), type: reactionType },
-    });
-
-    const count = await prisma.reaction.count({ where: { promptId: Number(promptId), type: reactionType } });
-    return res.json({ promptId: Number(promptId), type: reactionType.toLowerCase(), count, userReacted: true });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Failed to save reaction' });
-  }
-});
-
-app.delete('/api/reactions', async (req, res) => {
-  const { promptId, type } = req.body || {};
-  if (!promptId || !['like', 'bookmark'].includes(String(type).toLowerCase())) {
-    return res.status(400).json({ error: 'promptId and valid reaction type are required' });
-  }
-
-  try {
-    const actor = await ensureUser(deriveActorFromRequest(req));
-    const reactionType = String(type).toUpperCase();
-    await prisma.reaction.deleteMany({ where: { userId: actor.id, promptId: Number(promptId), type: reactionType } });
-    const count = await prisma.reaction.count({ where: { promptId: Number(promptId), type: reactionType } });
-    return res.json({ promptId: Number(promptId), type: reactionType.toLowerCase(), count, userReacted: false });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Failed to remove reaction' });
-  }
-});
-
-app.get('/api/library', async (req, res) => {
-  try {
-    const actor = await ensureUser(deriveActorFromRequest(req));
-    const prompts = await prisma.prompt.findMany({
-      where: { reactions: { some: { userId: actor.id, type: 'BOOKMARK' } } },
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        author: true,
-        tags: { include: { tag: true } },
-        reactions: true,
-        comments: true,
-      },
-    });
-
-    return res.json(prompts.map((prompt) => mapPrompt(prompt, actor.id)));
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Failed to load library' });
   }
 });
 
@@ -274,9 +249,13 @@ app.post('/api/sandbox/run', async (req, res) => {
     const run = await prisma.sandboxRun.create({
       data: {
         userId: actor.id,
+        systemText: systemText ?? '',
         promptText: promptText.trim(),
         inputText: inputText ?? '',
         outputText: aiResponse.text,
+        model: model ?? 'gpt-4o',
+        temperature: typeof temperature === 'number' ? temperature : 0.2,
+        maxTokens: typeof maxTokens === 'number' ? maxTokens : 512,
       },
       include: { user: true },
     });

@@ -59,7 +59,10 @@ const workspaceView = `
       <div class="prompt-feed" aria-live="polite">
         <div class="feed-toolbar">
           <div class="chip-row" id="tag-filter" aria-label="Filter by tag"></div>
-          <div class="pill" id="pagination-status">Loading…</div>
+          <div class="inline">
+            <button class="ghost" id="clear-filters" type="button">Clear filters</button>
+            <div class="pill" id="pagination-status">Loading…</div>
+          </div>
         </div>
         <div id="prompt-list" class="prompt-list"></div>
         <button class="secondary" id="load-more" type="button">Load more</button>
@@ -210,63 +213,57 @@ const workspaceView = `
 `;
 
 const labView = `
-  <section class="panel lab-panel">
-    <div class="section-header">
+  <section class="panel lab-panel lab-feed">
+    <div class="lab-hero">
       <div>
         <p class="eyebrow">AI Lab</p>
-        <h1>Team prompt library</h1>
-        <p class="muted">Browse live prompts from the backend, review reactions, and bookmark the ones you want to keep.</p>
+        <h1>Explore shared prompts</h1>
+        <p class="muted">Browse curated prompts, then jump into details to iterate in the sandbox.</p>
       </div>
-      <div class="pill">Realtime reactions</div>
-    </div>
-
-    <div class="lab-layout">
+      <div class="lab-search-row">
+        <label class="search" for="lab-search">
+          <span>Search prompts</span>
+          <input id="lab-search" type="search" placeholder="Search by title or problem" />
+        </label>
+        <div class="chip-row" id="lab-tag-chips" aria-label="Filter by tag"></div>
+      </div>
       <div class="card">
-        <div class="card-header">
-          <h3>Prompt feed</h3>
-          <p class="muted small">Counts reflect backend reactions.</p>
-        </div>
-        <div id="lab-prompt-list" class="prompt-list compact" aria-live="polite"></div>
-      </div>
-
-      <div class="card" id="lab-prompt-detail" aria-live="polite">
-        <div class="card-header">
-          <div>
-            <p class="eyebrow" id="lab-detail-meta"></p>
-            <h3 id="lab-detail-title">Select a prompt</h3>
-          </div>
-          <div class="pill" id="lab-detail-reactions"></div>
-        </div>
-        <p class="muted" id="lab-detail-context">Choose a prompt from the feed to see the full text.</p>
-        <div class="pill-row" id="lab-detail-tags"></div>
-        <pre class="code-block" id="lab-detail-body">Prompt text will appear here.</pre>
-        <div class="inline">
-          <button class="chip" id="lab-like-btn" data-reaction="like">👍 Like</button>
-          <button class="chip" id="lab-bookmark-btn" data-reaction="bookmark">🔖 Bookmark</button>
-        </div>
-        <p class="small muted" id="lab-detail-comments"></p>
-      </div>
-    </div>
-  </section>
-`;
-
-const libraryView = `
-  <section class="panel lab-panel">
-    <div class="section-header">
-      <div>
-        <p class="eyebrow">My Library</p>
-        <h1>Bookmarked prompts</h1>
-        <p class="muted">Prompts you have saved with the 🔖 action appear here.</p>
-      </div>
-      <div class="pill">Private to you</div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <h3>Saved prompts</h3>
-        <p class="muted small">Powered by backend bookmarks.</p>
+        <h3>Pilot feedback script</h3>
+        <p class="muted">Share these three prompts when you hand the lab to a teammate.</p>
+        <ul class="bullets">
+          <li>Was it easy to find something useful in the feed or sandbox?</li>
+          <li>Did the sandbox controls feel natural for running a real task?</li>
+          <li>What was the most annoying thing while completing your run?</li>
+        </ul>
+        <p class="pill">Copy and paste into Slack before they start</p>
       </div>
       <div id="library-list" class="prompt-list compact" aria-live="polite"></div>
       <p class="muted small" id="library-empty" hidden>You have not bookmarked any prompts yet.</p>
+    </div>
+
+    <div class="lab-sections">
+      <section class="lab-section" aria-label="Featured prompt">
+        <div class="section-header compact">
+          <div>
+            <p class="eyebrow">Featured</p>
+            <h2>Prompt spotlight</h2>
+          </div>
+        </div>
+        <div id="featured-card" class="prompt-grid"></div>
+      </section>
+
+      <section class="lab-section" aria-label="Latest prompts">
+        <div class="section-header compact">
+          <div>
+            <p class="eyebrow">Latest</p>
+            <h2>Latest prompts</h2>
+          </div>
+        </div>
+        <p class="muted small" id="lab-status" role="status">Loading prompts...</p>
+        <div id="prompt-grid" class="prompt-grid"></div>
+      </section>
+
+      <section class="lab-section" id="prompt-detail" hidden aria-live="polite"></section>
     </div>
   </section>
 `;
@@ -369,6 +366,7 @@ const sandboxView = `
           <div class="response-meta">
             <span id="token-usage" class="muted small"></span>
             <span id="response-model" class="pill">Live sandbox</span>
+            <button class="ghost small" id="copy-response-btn" type="button">Copy response</button>
           </div>
           <pre id="response-body" class="response-body">Run the sandbox to see output.</pre>
         </div>
