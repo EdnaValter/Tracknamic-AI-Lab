@@ -4,7 +4,6 @@ import OpenAI from 'openai';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
-import path from 'node:path';
 
 const prisma = new PrismaClient();
 const app = express();
@@ -36,13 +35,6 @@ const DEFAULT_SANDBOX_USER = {
   name: 'Casey Demo',
 };
 
-const promptInclude = {
-  author: true,
-  tags: { include: { tag: true } },
-  reactions: true,
-  comments: { include: { user: true } },
-};
-
 async function ensureUser({ email, name } = DEFAULT_SANDBOX_USER) {
   const normalizedEmail = (email ?? DEFAULT_SANDBOX_USER.email).trim().toLowerCase();
   const displayName = name?.trim() || DEFAULT_SANDBOX_USER.name;
@@ -51,17 +43,6 @@ async function ensureUser({ email, name } = DEFAULT_SANDBOX_USER) {
     update: { name: displayName },
     create: { email: normalizedEmail, name: displayName },
   });
-}
-
-function normalizeTagNames(tags = []) {
-  return Array.from(
-    new Set(
-      (tags || [])
-        .map((tag) => (typeof tag === 'string' ? tag : String(tag || '')))
-        .map((tag) => tag.trim().toLowerCase())
-        .filter(Boolean),
-    ),
-  );
 }
 
 async function generateSandboxResponse({ systemText, promptText, inputText, model, temperature, maxTokens }) {
@@ -151,7 +132,12 @@ app.get('/prompts/:id', async (req, res) => {
   try {
     const prompt = await prisma.prompt.findUnique({
       where: { id: promptId },
-      include: promptInclude,
+      include: {
+        author: true,
+        tags: { include: { tag: true } },
+        reactions: true,
+        comments: { include: { user: true } },
+      },
     });
 
     if (!prompt) {
