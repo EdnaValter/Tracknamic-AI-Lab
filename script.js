@@ -539,6 +539,16 @@ function setupPromptFeed() {
       renderPromptFeed();
     }
   });
+  document.getElementById('clear-filters')?.addEventListener('click', () => {
+    const search = document.getElementById('prompt-search');
+    const sort = document.getElementById('prompt-sort');
+    feedState.query = '';
+    feedState.selectedTag = null;
+    feedState.sort = 'newest';
+    if (search) search.value = '';
+    if (sort) sort.value = 'newest';
+    renderPromptFeed();
+  });
   list.addEventListener('click', handlePromptActions);
   document.getElementById('load-more')?.addEventListener('click', () => {
     feedState.page += 1;
@@ -567,6 +577,7 @@ function setupPromptFeed() {
 const sandboxState = {
   runs: [],
   activeResponse: '',
+  activeRun: null,
   loading: false,
 };
 
@@ -653,10 +664,19 @@ function renderHistory() {
     button.type = 'button';
     const previewSource = run.prompt || run.promptText || '';
     const preview = previewSource.length > 42 ? `${previewSource.slice(0, 42)}…` : previewSource;
-    button.innerHTML = `<span class="history-title">${preview || 'Untitled prompt'}</span><span class="history-meta">${formatTimestamp(new Date(run.createdAt))} · ${run.model}</span>`;
+    const metaParts = [
+      formatTimestamp(new Date(run.createdAt)),
+      run.model,
+      `temp ${Number(run.temperature).toFixed(2)}`,
+      `${run.maxTokens} toks`,
+    ];
+    button.innerHTML = `<span class="history-title">${preview || 'Untitled prompt'}</span><span class="history-meta">${metaParts.join(
+      ' · ',
+    )}</span>`;
     button.addEventListener('click', () => {
       hydrateForm(run);
       sandboxState.activeResponse = run.response;
+      sandboxState.activeRun = run;
       renderResponse();
       setSandboxStatus('Restored settings from history.');
     });
@@ -667,14 +687,20 @@ function renderHistory() {
 function renderResponse() {
   const container = document.getElementById('response-body');
   const usage = document.getElementById('token-usage');
+  const modelBadge = document.getElementById('response-model');
   if (!container || !usage) return;
   if (!sandboxState.activeResponse) {
     container.textContent = 'Run the sandbox to see output.';
     usage.textContent = '';
+    if (modelBadge) modelBadge.textContent = 'Live sandbox';
     return;
   }
   container.textContent = sandboxState.activeResponse;
-  usage.textContent = 'Tokens: ~estimate';
+  const tokenEstimate = sandboxState.activeRun?.maxTokens
+    ? `${sandboxState.activeRun.maxTokens} requested`
+    : '~estimate';
+  usage.textContent = `Tokens: ${tokenEstimate}`;
+  if (modelBadge) modelBadge.textContent = sandboxState.activeRun?.model || 'Live sandbox';
 }
 
 function updateSessionBadges(runTime = null) {
@@ -704,8 +730,10 @@ async function handleRun(event) {
   setSandboxStatus('Sending prompt to the AI layer…');
   try {
     const { text, run } = await runSandboxExperiment(values);
+    const mappedRun = mapRunRecord(run);
     sandboxState.activeResponse = text;
-    sandboxState.runs.unshift(run);
+    sandboxState.activeRun = mappedRun;
+    sandboxState.runs.unshift(mappedRun);
     if (sandboxState.runs.length > 20) {
       sandboxState.runs = sandboxState.runs.slice(0, 20);
     }
@@ -760,6 +788,17 @@ function handleSaveAsPrompt() {
   setSandboxStatus('Saved as a prompt draft locally. Wire this into your prompts backend to persist.', 'success');
 }
 
+function handleCopyResponse() {
+  if (!sandboxState.activeResponse) {
+    setSandboxStatus('Run the sandbox first, then copy the output.', 'danger');
+    return;
+  }
+  navigator.clipboard
+    ?.writeText(sandboxState.activeResponse)
+    .then(() => setSandboxStatus('Response copied for feedback sharing.', 'success'))
+    .catch(() => setSandboxStatus('Unable to copy right now. Select and copy manually.', 'danger'));
+}
+
 async function loadSandboxHistory() {
   try {
     const response = await fetch('/api/sandbox/runs');
@@ -768,8 +807,10 @@ async function loadSandboxHistory() {
     sandboxState.runs = Array.isArray(runs) ? runs.map(mapRunRecord) : [];
     renderHistory();
     if (sandboxState.runs[0]) {
-      sandboxState.activeResponse = sandboxState.runs[0].response;
-      hydrateForm(sandboxState.runs[0]);
+      const latest = sandboxState.runs[0];
+      sandboxState.activeResponse = latest.response;
+      sandboxState.activeRun = latest;
+      hydrateForm(latest);
       renderResponse();
       setSandboxStatus('Restored your latest sandbox run.');
     }
@@ -794,6 +835,7 @@ function setupSandboxPage() {
   document.getElementById('launch-btn')?.addEventListener('click', handleRun);
   document.getElementById('reset-btn')?.addEventListener('click', handleReset);
   document.getElementById('save-prompt-btn')?.addEventListener('click', handleSaveAsPrompt);
+  document.getElementById('copy-response-btn')?.addEventListener('click', handleCopyResponse);
   const tempInput = document.getElementById('temperature-input');
   const tempValue = document.getElementById('temperature-value');
   tempInput?.addEventListener('input', () => {

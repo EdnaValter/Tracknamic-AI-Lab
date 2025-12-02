@@ -59,7 +59,10 @@ const workspaceView = `
       <div class="prompt-feed" aria-live="polite">
         <div class="feed-toolbar">
           <div class="chip-row" id="tag-filter" aria-label="Filter by tag"></div>
-          <div class="pill" id="pagination-status">Loading…</div>
+          <div class="inline">
+            <button class="ghost" id="clear-filters" type="button">Clear filters</button>
+            <div class="pill" id="pagination-status">Loading…</div>
+          </div>
         </div>
         <div id="prompt-list" class="prompt-list"></div>
         <button class="secondary" id="load-more" type="button">Load more</button>
@@ -240,6 +243,16 @@ const labView = `
         <p class="muted">Unauthenticated visitors are redirected to login before viewing any lab routes.</p>
         <p class="pill">Protected: /, /lab, /sandbox</p>
       </div>
+      <div class="card">
+        <h3>Pilot feedback script</h3>
+        <p class="muted">Share these three prompts when you hand the lab to a teammate.</p>
+        <ul class="bullets">
+          <li>Was it easy to find something useful in the feed or sandbox?</li>
+          <li>Did the sandbox controls feel natural for running a real task?</li>
+          <li>What was the most annoying thing while completing your run?</li>
+        </ul>
+        <p class="pill">Copy and paste into Slack before they start</p>
+      </div>
     </div>
   </section>
 `;
@@ -342,6 +355,7 @@ const sandboxView = `
           <div class="response-meta">
             <span id="token-usage" class="muted small"></span>
             <span id="response-model" class="pill">Live sandbox</span>
+            <button class="ghost small" id="copy-response-btn" type="button">Copy response</button>
           </div>
           <pre id="response-body" class="response-body">Run the sandbox to see output.</pre>
         </div>
