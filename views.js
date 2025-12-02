@@ -237,6 +237,8 @@ const labView = `
         </ul>
         <p class="pill">Copy and paste into Slack before they start</p>
       </div>
+      <div id="library-list" class="prompt-list compact" aria-live="polite"></div>
+      <p class="muted small" id="library-empty" hidden>You have not bookmarked any prompts yet.</p>
     </div>
 
     <div class="lab-sections">
@@ -383,6 +385,7 @@ const sandboxView = `
 
 export function getViewTemplate(route) {
   if (route === 'lab') return labView;
+  if (route === 'library') return libraryView;
   if (route === 'sandbox') return sandboxView;
   return workspaceView;
 }

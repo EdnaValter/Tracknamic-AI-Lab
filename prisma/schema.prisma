@@ -66,6 +66,8 @@ model Reaction {
 
   user   User   @relation(fields: [userId], references: [id])
   prompt Prompt @relation(fields: [promptId], references: [id])
+
+  @@unique([userId, promptId, type])
 }
 
 model Comment {

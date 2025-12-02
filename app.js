@@ -6,6 +6,7 @@ import { initializeLabUI } from './lab.js';
 
 function resolveRouteFromPath() {
   const path = window.location.pathname;
+  if (path.includes('library')) return 'library';
   if (path.includes('lab')) return 'lab';
   if (path.includes('sandbox')) return 'sandbox';
   return 'workspace';

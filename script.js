@@ -4,6 +4,13 @@ export const STORAGE_KEY = 'ai-lab-prompts';
 const FALLBACK_USER = { id: 'demo-user', name: 'Casey Demo', email: 'casey@tracknamic.com' };
 export const CURRENT_USER = getCurrentUser?.() ?? FALLBACK_USER;
 
+function getUserHeaders() {
+  const headers = {};
+  if (CURRENT_USER?.email) headers['x-user-email'] = CURRENT_USER.email;
+  if (CURRENT_USER?.name) headers['x-user-name'] = CURRENT_USER.name;
+  return headers;
+}
+
 const now = () => Date.now();
 
 export const DEFAULT_PROMPTS = [
@@ -659,6 +666,170 @@ function setupPromptFeed() {
   document.getElementById('prompt-modal')?.addEventListener('click', handlePromptActions);
 }
 
+const labState = { prompts: [], selectedId: null };
+
+function buildCompactPromptCard(prompt) {
+  const card = document.createElement('article');
+  card.className = 'prompt-card compact';
+  card.dataset.promptId = prompt.id;
+  const tags = (prompt.tags || []).map((tag) => `<span class="pill">${tag}</span>`).join('');
+  card.innerHTML = `
+    <header class="prompt-card__header">
+      <div>
+        <p class="eyebrow">${prompt.author?.name || 'Unknown'} • ${formatDate(prompt.createdAt)}</p>
+        <h3>${prompt.title}</h3>
+        <p class="muted">${prompt.context || prompt.problem || 'Prompt detail available in the panel.'}</p>
+      </div>
+    </header>
+    <p class="prompt-card__body">${prompt.promptText?.slice(0, 120) || ''}${
+    prompt.promptText?.length > 120 ? '…' : ''
+  }</p>
+    <div class="prompt-meta">${tags}</div>
+    <div class="prompt-footer">
+      <div class="reactions" role="group" aria-label="Reactions">
+        <span class="pill">👍 ${prompt.reactionCounts?.like ?? 0}</span>
+        <span class="pill">🔖 ${prompt.reactionCounts?.bookmark ?? 0}</span>
+      </div>
+      <div class="prompt-cta small muted">${prompt.commentCount || 0} comments</div>
+    </div>
+  `;
+  return card;
+}
+
+function renderLabPromptList() {
+  const list = document.getElementById('lab-prompt-list');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!labState.prompts.length) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'No prompts found yet. Seed the database to explore reactions.';
+    list.appendChild(empty);
+    return;
+  }
+  labState.prompts.forEach((prompt) => {
+    const card = buildCompactPromptCard(prompt);
+    if (labState.selectedId === prompt.id) {
+      card.classList.add('active');
+    }
+    list.appendChild(card);
+  });
+}
+
+function renderLabPromptDetail() {
+  const prompt = labState.prompts.find((p) => p.id === labState.selectedId);
+  const title = document.getElementById('lab-detail-title');
+  const body = document.getElementById('lab-detail-body');
+  const meta = document.getElementById('lab-detail-meta');
+  const tags = document.getElementById('lab-detail-tags');
+  const reactions = document.getElementById('lab-detail-reactions');
+  const context = document.getElementById('lab-detail-context');
+  const comments = document.getElementById('lab-detail-comments');
+  const likeBtn = document.getElementById('lab-like-btn');
+  const bookmarkBtn = document.getElementById('lab-bookmark-btn');
+
+  if (!prompt) {
+    if (title) title.textContent = 'Select a prompt';
+    if (body) body.textContent = 'Prompt text will appear here.';
+    if (meta) meta.textContent = '';
+    if (tags) tags.innerHTML = '';
+    if (reactions) reactions.textContent = '';
+    if (context) context.textContent = 'Choose a prompt from the feed to see the full text.';
+    if (comments) comments.textContent = '';
+    if (likeBtn) likeBtn.disabled = true;
+    if (bookmarkBtn) bookmarkBtn.disabled = true;
+    return;
+  }
+
+  if (title) title.textContent = prompt.title;
+  if (body) body.textContent = prompt.promptText || 'No prompt text provided yet.';
+  if (meta) meta.textContent = `${prompt.author?.name || 'Unknown'} • ${formatDate(prompt.createdAt)}`;
+  if (tags) {
+    tags.innerHTML = '';
+    (prompt.tags || []).forEach((tag) => {
+      const pill = document.createElement('span');
+      pill.className = 'pill';
+      pill.textContent = tag;
+      tags.appendChild(pill);
+    });
+  }
+  if (reactions) {
+    reactions.textContent = `👍 ${prompt.reactionCounts?.like ?? 0} · 🔖 ${prompt.reactionCounts?.bookmark ?? 0}`;
+  }
+  if (context) context.textContent = prompt.context || prompt.problem || '';
+  if (comments) comments.textContent = `${prompt.commentCount || 0} comments`;
+  if (likeBtn) {
+    likeBtn.disabled = false;
+    likeBtn.classList.toggle('primary', !!prompt.userReactions?.like);
+    likeBtn.textContent = `👍 ${prompt.userReactions?.like ? 'Liked' : 'Like'}`;
+  }
+  if (bookmarkBtn) {
+    bookmarkBtn.disabled = false;
+    bookmarkBtn.classList.toggle('primary', !!prompt.userReactions?.bookmark);
+    bookmarkBtn.textContent = `🔖 ${prompt.userReactions?.bookmark ? 'Saved' : 'Bookmark'}`;
+  }
+}
+
+async function loadLabPrompts() {
+  try {
+    const prompts = await fetch('/api/prompts', { headers: getUserHeaders() });
+    const payload = await prompts.json();
+    if (!prompts.ok) throw new Error(payload?.error || 'Failed to load prompts');
+    labState.prompts = Array.isArray(payload) ? payload : [];
+    labState.selectedId = labState.prompts[0]?.id ?? null;
+    renderLabPromptList();
+    renderLabPromptDetail();
+  } catch (error) {
+    console.error(error);
+    const context = document.getElementById('lab-detail-context');
+    if (context) context.textContent = 'Unable to load prompts right now.';
+  }
+}
+
+async function handleLabReaction(type) {
+  const prompt = labState.prompts.find((p) => p.id === labState.selectedId);
+  if (!prompt) return;
+  const method = prompt.userReactions?.[type] ? 'DELETE' : 'POST';
+  try {
+    const response = await fetch('/api/reactions', {
+      method,
+      headers: { 'Content-Type': 'application/json', ...getUserHeaders() },
+      body: JSON.stringify({ promptId: prompt.id, type }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload?.error || 'Reaction failed');
+    const normalizedType = payload.type || type;
+    prompt.reactionCounts = { ...prompt.reactionCounts, [normalizedType]: payload.count };
+    prompt.userReactions = { ...prompt.userReactions, [normalizedType]: payload.userReacted };
+    renderLabPromptList();
+    renderLabPromptDetail();
+  } catch (error) {
+    console.error(error);
+    alert('Unable to update reaction. Please try again.');
+  }
+}
+
+async function loadLibrary() {
+  const list = document.getElementById('library-list');
+  const empty = document.getElementById('library-empty');
+  if (!list) return;
+  list.innerHTML = '';
+  try {
+    const response = await fetch('/api/library', { headers: getUserHeaders() });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload?.error || 'Failed to load library');
+    const prompts = Array.isArray(payload) ? payload : [];
+    if (!prompts.length && empty) empty.hidden = false;
+    prompts.forEach((prompt) => list.appendChild(buildCompactPromptCard(prompt)));
+  } catch (error) {
+    console.error(error);
+    const errorMsg = document.createElement('p');
+    errorMsg.className = 'muted';
+    errorMsg.textContent = 'Unable to load your library right now.';
+    list.appendChild(errorMsg);
+  }
+}
+
 const sandboxState = {
   runs: [],
   activeResponse: '',
@@ -964,6 +1135,29 @@ function setupSandboxPage() {
   maxInput?.addEventListener('input', () => {
     maxValue.textContent = maxInput.value;
   });
+}
+
+export function initializeLabUI() {
+  const list = document.getElementById('lab-prompt-list');
+  if (!list) return;
+  setupThemeToggle();
+  loadLabPrompts();
+  list.addEventListener('click', (event) => {
+    const card = event.target.closest('[data-prompt-id]');
+    if (!card) return;
+    labState.selectedId = Number(card.dataset.promptId);
+    renderLabPromptList();
+    renderLabPromptDetail();
+  });
+  document.getElementById('lab-like-btn')?.addEventListener('click', () => handleLabReaction('like'));
+  document.getElementById('lab-bookmark-btn')?.addEventListener('click', () => handleLabReaction('bookmark'));
+}
+
+export function initializeLibraryUI() {
+  const list = document.getElementById('library-list');
+  if (!list) return;
+  setupThemeToggle();
+  loadLibrary();
 }
 
 export function initializeWorkspaceUI() {
