@@ -354,6 +354,43 @@ const labView = `
   </section>
 `;
 
+const libraryView = `
+  <section class="panel library-panel">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">My Library</p>
+        <h1>Bookmarked prompts</h1>
+        <p class="muted">Review and reuse the prompts you've saved from the workspace or lab feed.</p>
+      </div>
+      <div class="pill">Personal workspace</div>
+    </div>
+
+    <div class="grid grid-3">
+      <div class="card span-2">
+        <div class="section-header compact">
+          <div>
+            <p class="eyebrow">Saved prompts</p>
+            <h2>Your collection</h2>
+            <p class="muted">Launch any prompt to iterate further in the sandbox or share back with your team.</p>
+          </div>
+        </div>
+        <div id="library-list" class="prompt-list compact" aria-live="polite"></div>
+        <p class="muted" id="library-empty" hidden>You haven't saved any prompts yet.</p>
+      </div>
+
+      <aside class="card">
+        <h3>How saving works</h3>
+        <ul class="bullets">
+          <li>Bookmark a prompt from the workspace or lab feed to add it here.</li>
+          <li>Use the sandbox to refine saved prompts and publish updated versions.</li>
+          <li>Reactions and comments stay in sync with your team's shared view.</li>
+        </ul>
+        <p class="pill">🔖 Bookmarked</p>
+      </aside>
+    </div>
+  </section>
+`;
+
 const sandboxView = `
   <div class="sandbox-main">
   <section class="sandbox-hero">
