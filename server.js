@@ -1,86 +1,34 @@
 import 'dotenv/config';
 import express from 'express';
 import OpenAI from 'openai';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
 import path from 'node:path';
 
 const prisma = new PrismaClient();
 const app = express();
 const port = process.env.PORT || 3000;
-const rootDir = process.cwd();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
 app.use(express.json());
-app.get('/lab/:id', (req, res) => {
-  return res.sendFile(path.join(rootDir, 'lab.html'));
-});
-app.use(express.static(rootDir));
+app.use(express.static(__dirname));
 
-app.get('/api/prompts', async (req, res) => {
-  try {
-    const prompts = await prisma.prompt.findMany({ orderBy: { createdAt: 'desc' }, include: promptInclude });
-    return res.json(prompts);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Failed to load prompts' });
-  }
+app.get(['/', '/index.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/api/prompts/:id', async (req, res) => {
-  const promptId = Number(req.params.id);
-  if (Number.isNaN(promptId)) {
-    return res.status(400).json({ error: 'Prompt id must be a number' });
-  }
-  try {
-    const prompt = await prisma.prompt.findUnique({ where: { id: promptId }, include: promptInclude });
-    if (!prompt) return res.status(404).json({ error: 'Prompt not found' });
-    return res.json(prompt);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Unexpected error retrieving prompt' });
-  }
+app.get(['/sandbox', '/sandbox.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'sandbox.html'));
 });
 
-app.post('/api/prompts', async (req, res) => {
-  const { title, problem, context, promptText, exampleInput = '', exampleOutput = '', reflection = '', tags = [], user } =
-    req.body ?? {};
-  if (!title?.trim() || !problem?.trim() || !context?.trim() || !promptText?.trim()) {
-    return res.status(400).json({ error: 'Title, problem, context, and prompt text are required.' });
-  }
-  try {
-    const actor = await ensureUser(user);
-    const normalizedTags = normalizeTagNames(tags);
-    const prompt = await prisma.prompt.create({
-      data: {
-        title: title.trim(),
-        problem: problem.trim(),
-        context: context.trim(),
-        promptText: promptText.trim(),
-        exampleInput: exampleInput?.trim() ?? '',
-        exampleOutput: exampleOutput?.trim() ?? '',
-        reflection: reflection?.trim() || null,
-        authorId: actor.id,
-        tags: {
-          create: normalizedTags.map((tagName) => ({
-            tag: {
-              connectOrCreate: {
-                where: { name: tagName },
-                create: { name: tagName },
-              },
-            },
-          })),
-        },
-      },
-      include: promptInclude,
-    });
-    return res.status(201).json(prompt);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Failed to create prompt' });
-  }
+app.get(['/lab', '/lab/:id', '/lab/:id/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'lab.html'));
 });
 
 const DEFAULT_SANDBOX_USER = {
@@ -150,6 +98,50 @@ async function generateSandboxResponse({ systemText, promptText, inputText, mode
   return { text };
 }
 
+function deriveActorFromRequest(req) {
+  const headerEmail = req.headers['x-user-email'];
+  const headerName = req.headers['x-user-name'];
+  if (headerEmail) return { email: headerEmail, name: headerName }; // validated in ensureUser
+  const { user } = req.body || {};
+  if (user?.email) return user;
+  return DEFAULT_SANDBOX_USER;
+}
+
+function mapPrompt(prompt, actorId) {
+  const reactionCounts = prompt.reactions.reduce(
+    (acc, reaction) => ({
+      ...acc,
+      [reaction.type.toLowerCase()]: (acc[reaction.type.toLowerCase()] || 0) + 1,
+    }),
+    {},
+  );
+  const userReactions = prompt.reactions.reduce(
+    (acc, reaction) => ({
+      ...acc,
+      [reaction.type.toLowerCase()]: reaction.userId === actorId || acc[reaction.type.toLowerCase()] === true,
+    }),
+    {},
+  );
+
+  return {
+    id: prompt.id,
+    title: prompt.title,
+    problem: prompt.problem,
+    context: prompt.context,
+    promptText: prompt.promptText,
+    exampleInput: prompt.exampleInput,
+    exampleOutput: prompt.exampleOutput,
+    reflection: prompt.reflection,
+    createdAt: prompt.createdAt,
+    updatedAt: prompt.updatedAt,
+    author: { id: prompt.author.id, name: prompt.author.name, email: prompt.author.email },
+    tags: prompt.tags.map((entry) => entry.tag.name),
+    reactionCounts: { like: reactionCounts.like || 0, bookmark: reactionCounts.bookmark || 0 },
+    userReactions: { like: !!userReactions.like, bookmark: !!userReactions.bookmark },
+    commentCount: prompt.comments.length,
+  };
+}
+
 app.get('/prompts/:id', async (req, res) => {
   const promptId = Number(req.params.id);
   if (Number.isNaN(promptId)) {
@@ -166,10 +158,79 @@ app.get('/prompts/:id', async (req, res) => {
       return res.status(404).json({ error: 'Prompt not found' });
     }
 
-    return res.json(prompt);
+    const reactionSummary = prompt.reactions.reduce(
+      (acc, reaction) => ({
+        ...acc,
+        [reaction.type]: (acc[reaction.type] ?? 0) + 1,
+      }),
+      {},
+    );
+
+    const { reactions, ...rest } = prompt;
+
+    return res.json({ ...rest, reactionSummary });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'Unexpected error retrieving prompt' });
+  }
+});
+
+app.get('/api/prompts', async (req, res) => {
+  const { q, tag } = req.query ?? {};
+
+  const filters = [];
+  if (q?.trim()) {
+    filters.push({
+      OR: [
+        { title: { contains: q.trim(), mode: 'insensitive' } },
+        { problem: { contains: q.trim(), mode: 'insensitive' } },
+      ],
+    });
+  }
+
+  if (tag?.trim()) {
+    filters.push({
+      tags: { some: { tag: { name: { equals: tag.trim(), mode: 'insensitive' } } } },
+    });
+  }
+
+  try {
+    const where = filters.length > 0 ? { AND: filters } : undefined;
+    const [prompts, tags] = await Promise.all([
+      prisma.prompt.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          author: true,
+          tags: { include: { tag: true } },
+          reactions: true,
+          _count: { select: { comments: true } },
+        },
+      }),
+      prisma.tag.findMany({ orderBy: { name: 'asc' } }),
+    ]);
+
+    const mapped = prompts.map((prompt) => {
+      const reactionSummary = prompt.reactions.reduce(
+        (acc, reaction) => ({
+          ...acc,
+          [reaction.type]: (acc[reaction.type] ?? 0) + 1,
+        }),
+        {},
+      );
+
+      const { reactions, ...rest } = prompt;
+
+      return {
+        ...rest,
+        reactionSummary,
+      };
+    });
+
+    return res.json({ prompts: mapped, tags });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to load prompts' });
   }
 });
 
@@ -202,9 +263,13 @@ app.post('/api/sandbox/run', async (req, res) => {
     const run = await prisma.sandboxRun.create({
       data: {
         userId: actor.id,
+        systemText: systemText ?? '',
         promptText: promptText.trim(),
         inputText: inputText ?? '',
         outputText: aiResponse.text,
+        model: model ?? 'gpt-4o',
+        temperature: typeof temperature === 'number' ? temperature : 0.2,
+        maxTokens: typeof maxTokens === 'number' ? maxTokens : 512,
       },
       include: { user: true },
     });

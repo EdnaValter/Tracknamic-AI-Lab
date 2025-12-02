@@ -1,6 +1,7 @@
 export const routes = {
   workspace: { label: 'AI-Lab', href: 'index.html' },
   lab: { label: 'Lab Guide', href: 'lab.html' },
+  library: { label: 'My Library', href: '/me/library.html' },
   sandbox: { label: 'Sandbox', href: 'sandbox.html' },
 };
 

@@ -59,7 +59,10 @@ const workspaceView = `
       <div class="prompt-feed" aria-live="polite">
         <div class="feed-toolbar">
           <div class="chip-row" id="tag-filter" aria-label="Filter by tag"></div>
-          <div class="pill" id="pagination-status">Loading…</div>
+          <div class="inline">
+            <button class="ghost" id="clear-filters" type="button">Clear filters</button>
+            <div class="pill" id="pagination-status">Loading…</div>
+          </div>
         </div>
         <div id="prompt-list" class="prompt-list"></div>
         <button class="secondary" id="load-more" type="button">Load more</button>
@@ -210,36 +213,57 @@ const workspaceView = `
 `;
 
 const labView = `
-  <section class="panel lab-panel">
-    <div class="section-header">
+  <section class="panel lab-panel lab-feed">
+    <div class="lab-hero">
       <div>
-        <p class="eyebrow">Internal tools</p>
-        <h1>AI Lab overview</h1>
-        <p class="muted">Authenticated teammates can explore the workspace, launch the sandbox, and access this lab guide.</p>
+        <p class="eyebrow">AI Lab</p>
+        <h1>Explore shared prompts</h1>
+        <p class="muted">Browse curated prompts, then jump into details to iterate in the sandbox.</p>
       </div>
-      <div class="pill">Tracknamic SSO required</div>
+      <div class="lab-search-row">
+        <label class="search" for="lab-search">
+          <span>Search prompts</span>
+          <input id="lab-search" type="search" placeholder="Search by title or problem" />
+        </label>
+        <div class="chip-row" id="lab-tag-chips" aria-label="Filter by tag"></div>
+      </div>
+      <div class="card">
+        <h3>Pilot feedback script</h3>
+        <p class="muted">Share these three prompts when you hand the lab to a teammate.</p>
+        <ul class="bullets">
+          <li>Was it easy to find something useful in the feed or sandbox?</li>
+          <li>Did the sandbox controls feel natural for running a real task?</li>
+          <li>What was the most annoying thing while completing your run?</li>
+        </ul>
+        <p class="pill">Copy and paste into Slack before they start</p>
+      </div>
+      <div id="library-list" class="prompt-list compact" aria-live="polite"></div>
+      <p class="muted small" id="library-empty" hidden>You have not bookmarked any prompts yet.</p>
     </div>
-    <div class="grid grid-2 lab-grid">
-      <div class="card">
-        <h3>Workspace</h3>
-        <p class="muted">Draft, preview, and publish prompts to the shared feed with reactions and comments.</p>
-        <a class="secondary" href="index.html" data-route="workspace">Go to workspace</a>
-      </div>
-      <div class="card">
-        <h3>Launch Sandbox</h3>
-        <p class="muted">Run quick experiments with system instructions, temperature, and token controls.</p>
-        <a class="secondary" href="sandbox.html" data-route="sandbox">Open sandbox</a>
-      </div>
-      <div class="card">
-        <h3>User identity</h3>
-        <p class="muted">Backend keeps a Tracknamic user record so prompts and runs show real ownership.</p>
-        <code class="code-block" id="user-json"></code>
-      </div>
-      <div class="card">
-        <h3>Access control</h3>
-        <p class="muted">Unauthenticated visitors are redirected to login before viewing any lab routes.</p>
-        <p class="pill">Protected: /, /lab, /sandbox</p>
-      </div>
+
+    <div class="lab-sections">
+      <section class="lab-section" aria-label="Featured prompt">
+        <div class="section-header compact">
+          <div>
+            <p class="eyebrow">Featured</p>
+            <h2>Prompt spotlight</h2>
+          </div>
+        </div>
+        <div id="featured-card" class="prompt-grid"></div>
+      </section>
+
+      <section class="lab-section" aria-label="Latest prompts">
+        <div class="section-header compact">
+          <div>
+            <p class="eyebrow">Latest</p>
+            <h2>Latest prompts</h2>
+          </div>
+        </div>
+        <p class="muted small" id="lab-status" role="status">Loading prompts...</p>
+        <div id="prompt-grid" class="prompt-grid"></div>
+      </section>
+
+      <section class="lab-section" id="prompt-detail" hidden aria-live="polite"></section>
     </div>
   </section>
   <section class="panel" id="lab-prompts">
@@ -396,6 +420,7 @@ const sandboxView = `
           <div class="response-meta">
             <span id="token-usage" class="muted small"></span>
             <span id="response-model" class="pill">Live sandbox</span>
+            <button class="ghost small" id="copy-response-btn" type="button">Copy response</button>
           </div>
           <pre id="response-body" class="response-body">Run the sandbox to see output.</pre>
         </div>
@@ -477,6 +502,7 @@ const sandboxView = `
 
 export function getViewTemplate(route) {
   if (route === 'lab') return labView;
+  if (route === 'library') return libraryView;
   if (route === 'sandbox') return sandboxView;
   return workspaceView;
 }
