@@ -79,6 +79,50 @@ async function generateSandboxResponse({ systemText, promptText, inputText, mode
   return { text };
 }
 
+function deriveActorFromRequest(req) {
+  const headerEmail = req.headers['x-user-email'];
+  const headerName = req.headers['x-user-name'];
+  if (headerEmail) return { email: headerEmail, name: headerName }; // validated in ensureUser
+  const { user } = req.body || {};
+  if (user?.email) return user;
+  return DEFAULT_SANDBOX_USER;
+}
+
+function mapPrompt(prompt, actorId) {
+  const reactionCounts = prompt.reactions.reduce(
+    (acc, reaction) => ({
+      ...acc,
+      [reaction.type.toLowerCase()]: (acc[reaction.type.toLowerCase()] || 0) + 1,
+    }),
+    {},
+  );
+  const userReactions = prompt.reactions.reduce(
+    (acc, reaction) => ({
+      ...acc,
+      [reaction.type.toLowerCase()]: reaction.userId === actorId || acc[reaction.type.toLowerCase()] === true,
+    }),
+    {},
+  );
+
+  return {
+    id: prompt.id,
+    title: prompt.title,
+    problem: prompt.problem,
+    context: prompt.context,
+    promptText: prompt.promptText,
+    exampleInput: prompt.exampleInput,
+    exampleOutput: prompt.exampleOutput,
+    reflection: prompt.reflection,
+    createdAt: prompt.createdAt,
+    updatedAt: prompt.updatedAt,
+    author: { id: prompt.author.id, name: prompt.author.name, email: prompt.author.email },
+    tags: prompt.tags.map((entry) => entry.tag.name),
+    reactionCounts: { like: reactionCounts.like || 0, bookmark: reactionCounts.bookmark || 0 },
+    userReactions: { like: !!userReactions.like, bookmark: !!userReactions.bookmark },
+    commentCount: prompt.comments.length,
+  };
+}
+
 app.get('/prompts/:id', async (req, res) => {
   const promptId = Number(req.params.id);
   if (Number.isNaN(promptId)) {
@@ -219,9 +263,13 @@ app.post('/api/sandbox/run', async (req, res) => {
     const run = await prisma.sandboxRun.create({
       data: {
         userId: actor.id,
+        systemText: systemText ?? '',
         promptText: promptText.trim(),
         inputText: inputText ?? '',
         outputText: aiResponse.text,
+        model: model ?? 'gpt-4o',
+        temperature: typeof temperature === 'number' ? temperature : 0.2,
+        maxTokens: typeof maxTokens === 'number' ? maxTokens : 512,
       },
       include: { user: true },
     });

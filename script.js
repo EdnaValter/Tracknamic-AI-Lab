@@ -4,44 +4,136 @@ export const STORAGE_KEY = 'ai-lab-prompts';
 const FALLBACK_USER = { id: 'demo-user', name: 'Casey Demo', email: 'casey@tracknamic.com' };
 export const CURRENT_USER = getCurrentUser?.() ?? FALLBACK_USER;
 
+function getUserHeaders() {
+  const headers = {};
+  if (CURRENT_USER?.email) headers['x-user-email'] = CURRENT_USER.email;
+  if (CURRENT_USER?.name) headers['x-user-name'] = CURRENT_USER.name;
+  return headers;
+}
+
 const now = () => Date.now();
 
 export const DEFAULT_PROMPTS = [
   {
-    id: 'welcome-mentor',
-    title: 'Engineering Mentor',
-    body: 'You are a senior engineer who explains concepts with crisp examples.',
-    tags: ['getting-started', 'mentorship'],
+    id: 'accessibility-review-demo',
+    title: 'Demo: React accessibility review',
+    body: 'Given a React component and its props, audit for accessibility. Call out missing ARIA labels, keyboard traps, color contrast risks, and propose code snippets to fix them.',
+    tags: ['frontend', 'accessibility', 'react'],
     author: CURRENT_USER,
-    tip: 'Preface with a persona and concrete examples.',
+    tip: 'Lead with a quick checklist, then show patched JSX snippets.',
     createdAt: now(),
     updatedAt: now(),
-    reactions: { like: { count: 4, users: [] }, celebrate: { count: 1, users: [] } },
+    reactions: { like: { count: 11, users: [] }, celebrate: { count: 4, users: [] } },
     comments: [
       {
         id: 'comment-1',
-        author: { id: 'alex', name: 'Alex' },
-        body: 'Adding a short objective before the persona helps!',
+        author: { id: 'mica', name: 'Mica' },
+        body: 'Great demo—adding keyboard focus states to the snippet boosted Lighthouse scores.',
+        createdAt: now(),
+        parentId: null,
+      },
+      {
+        id: 'comment-2',
+        author: { id: 'ravi', name: 'Ravi' },
+        body: 'Mention skip-links for pages with multiple panels.',
         createdAt: now(),
         parentId: null,
       },
     ],
+    saves: ['design-system'],
+    forks: 2,
+  },
+  {
+    id: 'incident-timeline-drafter',
+    title: 'Incident timeline from Slack + logs',
+    body: 'Synthesize a terse incident timeline using Slack updates, PagerDuty notes, and log snippets. Highlight customer impact and what changed when mitigations landed.',
+    tags: ['incidents', 'sre', 'postmortem'],
+    author: { id: 'kim', name: 'Kim Tran' },
+    tip: 'Keep timestamps first, then actions, then blast radius. Close with next steps.',
+    createdAt: now(),
+    updatedAt: now(),
+    reactions: { like: { count: 9, users: [] }, celebrate: { count: 3, users: [] } },
+    comments: [],
     saves: ['team-shared'],
     forks: 1,
   },
   {
-    id: 'product-writer',
-    title: 'Product explainer',
-    body: 'Summarize requirements into a one-pager with bullets and risks.',
-    tags: ['productivity'],
-    author: { id: 'kim', name: 'Kim Tran' },
-    tip: 'Keep risks short and add a rollout plan.',
+    id: 'pr-review-helper',
+    title: 'PR review helper for risky migrations',
+    body: 'Review a pull request description and migration plan. Flag downgrade/rollback steps, call out tables at risk, and propose safety checks to add before merging.',
+    tags: ['backend', 'code-review', 'migrations'],
+    author: { id: 'alex', name: 'Alex Chen' },
+    tip: 'Return a checklist of blockers vs. nits and link to observability dashboards.',
+    createdAt: now(),
+    updatedAt: now(),
+    reactions: { like: { count: 8, users: [] }, celebrate: { count: 2, users: [] } },
+    comments: [
+      {
+        id: 'comment-3',
+        author: { id: 'casey', name: 'Casey Demo' },
+        body: 'The “blockers vs nits” section makes it easy to copy into GitHub reviews.',
+        createdAt: now(),
+        parentId: null,
+      },
+    ],
+    saves: ['platform'],
+    forks: 0,
+  },
+  {
+    id: 'accessibility-release-audit',
+    title: 'Demo: Generate accessibility audit before release',
+    body: 'Given a feature spec and component list, generate an accessibility audit with WCAG references, test cases for NVDA/VoiceOver, and a short risk callout for PMs.',
+    tags: ['accessibility', 'qa', 'demo'],
+    author: { id: 'li', name: 'Li Wei' },
+    tip: 'Map each component to a test case and end with a go/no-go summary.',
+    createdAt: now(),
+    updatedAt: now(),
+    reactions: { like: { count: 12, users: [] }, celebrate: { count: 6, users: [] } },
+    comments: [],
+    saves: ['releases'],
+    forks: 3,
+  },
+  {
+    id: 'customer-sentiment-brief',
+    title: 'Customer sentiment brief from tickets',
+    body: 'Cluster the last 50 support tickets by theme, extract representative quotes, and propose three fixes that would reduce volume the most.',
+    tags: ['support', 'analysis', 'summaries'],
+    author: { id: 'nina', name: 'Nina Soto' },
+    tip: 'Score each theme by frequency and severity; prioritize by both.',
+    createdAt: now(),
+    updatedAt: now(),
+    reactions: { like: { count: 6, users: [] }, celebrate: { count: 1, users: [] } },
+    comments: [],
+    saves: ['cx'],
+    forks: 1,
+  },
+  {
+    id: 'analytics-sql-explainer',
+    title: 'Explain analytics SQL and edge cases',
+    body: 'Given a SQL snippet and dashboard screenshot, explain what the query measures, note sampling or timezone pitfalls, and suggest two validation queries.',
+    tags: ['analytics', 'sql', 'data'],
+    author: { id: 'priya', name: 'Priya Desai' },
+    tip: 'Call out where COUNT DISTINCT or window functions might mislead.',
+    createdAt: now(),
+    updatedAt: now(),
+    reactions: { like: { count: 5, users: [] }, celebrate: { count: 2, users: [] } },
+    comments: [],
+    saves: ['data'],
+    forks: 0,
+  },
+  {
+    id: 'flagged-rollout-checklist',
+    title: 'Feature flag rollout checklist',
+    body: 'Create a rollout plan for a new feature flag. Include guardrail metrics, staged rollout steps, alert hooks, and an explicit rollback procedure.',
+    tags: ['productivity', 'release', 'sre'],
+    author: { id: 'casey', name: 'Casey Demo' },
+    tip: 'Use bullet points so PMs can paste into Linear.',
     createdAt: now(),
     updatedAt: now(),
     reactions: { like: { count: 7, users: [] }, celebrate: { count: 2, users: [] } },
     comments: [],
-    saves: [],
-    forks: 0,
+    saves: ['team-shared'],
+    forks: 2,
   },
 ];
 
@@ -539,6 +631,16 @@ function setupPromptFeed() {
       renderPromptFeed();
     }
   });
+  document.getElementById('clear-filters')?.addEventListener('click', () => {
+    const search = document.getElementById('prompt-search');
+    const sort = document.getElementById('prompt-sort');
+    feedState.query = '';
+    feedState.selectedTag = null;
+    feedState.sort = 'newest';
+    if (search) search.value = '';
+    if (sort) sort.value = 'newest';
+    renderPromptFeed();
+  });
   list.addEventListener('click', handlePromptActions);
   document.getElementById('load-more')?.addEventListener('click', () => {
     feedState.page += 1;
@@ -564,9 +666,174 @@ function setupPromptFeed() {
   document.getElementById('prompt-modal')?.addEventListener('click', handlePromptActions);
 }
 
+const labState = { prompts: [], selectedId: null };
+
+function buildCompactPromptCard(prompt) {
+  const card = document.createElement('article');
+  card.className = 'prompt-card compact';
+  card.dataset.promptId = prompt.id;
+  const tags = (prompt.tags || []).map((tag) => `<span class="pill">${tag}</span>`).join('');
+  card.innerHTML = `
+    <header class="prompt-card__header">
+      <div>
+        <p class="eyebrow">${prompt.author?.name || 'Unknown'} • ${formatDate(prompt.createdAt)}</p>
+        <h3>${prompt.title}</h3>
+        <p class="muted">${prompt.context || prompt.problem || 'Prompt detail available in the panel.'}</p>
+      </div>
+    </header>
+    <p class="prompt-card__body">${prompt.promptText?.slice(0, 120) || ''}${
+    prompt.promptText?.length > 120 ? '…' : ''
+  }</p>
+    <div class="prompt-meta">${tags}</div>
+    <div class="prompt-footer">
+      <div class="reactions" role="group" aria-label="Reactions">
+        <span class="pill">👍 ${prompt.reactionCounts?.like ?? 0}</span>
+        <span class="pill">🔖 ${prompt.reactionCounts?.bookmark ?? 0}</span>
+      </div>
+      <div class="prompt-cta small muted">${prompt.commentCount || 0} comments</div>
+    </div>
+  `;
+  return card;
+}
+
+function renderLabPromptList() {
+  const list = document.getElementById('lab-prompt-list');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!labState.prompts.length) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'No prompts found yet. Seed the database to explore reactions.';
+    list.appendChild(empty);
+    return;
+  }
+  labState.prompts.forEach((prompt) => {
+    const card = buildCompactPromptCard(prompt);
+    if (labState.selectedId === prompt.id) {
+      card.classList.add('active');
+    }
+    list.appendChild(card);
+  });
+}
+
+function renderLabPromptDetail() {
+  const prompt = labState.prompts.find((p) => p.id === labState.selectedId);
+  const title = document.getElementById('lab-detail-title');
+  const body = document.getElementById('lab-detail-body');
+  const meta = document.getElementById('lab-detail-meta');
+  const tags = document.getElementById('lab-detail-tags');
+  const reactions = document.getElementById('lab-detail-reactions');
+  const context = document.getElementById('lab-detail-context');
+  const comments = document.getElementById('lab-detail-comments');
+  const likeBtn = document.getElementById('lab-like-btn');
+  const bookmarkBtn = document.getElementById('lab-bookmark-btn');
+
+  if (!prompt) {
+    if (title) title.textContent = 'Select a prompt';
+    if (body) body.textContent = 'Prompt text will appear here.';
+    if (meta) meta.textContent = '';
+    if (tags) tags.innerHTML = '';
+    if (reactions) reactions.textContent = '';
+    if (context) context.textContent = 'Choose a prompt from the feed to see the full text.';
+    if (comments) comments.textContent = '';
+    if (likeBtn) likeBtn.disabled = true;
+    if (bookmarkBtn) bookmarkBtn.disabled = true;
+    return;
+  }
+
+  if (title) title.textContent = prompt.title;
+  if (body) body.textContent = prompt.promptText || 'No prompt text provided yet.';
+  if (meta) meta.textContent = `${prompt.author?.name || 'Unknown'} • ${formatDate(prompt.createdAt)}`;
+  if (tags) {
+    tags.innerHTML = '';
+    (prompt.tags || []).forEach((tag) => {
+      const pill = document.createElement('span');
+      pill.className = 'pill';
+      pill.textContent = tag;
+      tags.appendChild(pill);
+    });
+  }
+  if (reactions) {
+    reactions.textContent = `👍 ${prompt.reactionCounts?.like ?? 0} · 🔖 ${prompt.reactionCounts?.bookmark ?? 0}`;
+  }
+  if (context) context.textContent = prompt.context || prompt.problem || '';
+  if (comments) comments.textContent = `${prompt.commentCount || 0} comments`;
+  if (likeBtn) {
+    likeBtn.disabled = false;
+    likeBtn.classList.toggle('primary', !!prompt.userReactions?.like);
+    likeBtn.textContent = `👍 ${prompt.userReactions?.like ? 'Liked' : 'Like'}`;
+  }
+  if (bookmarkBtn) {
+    bookmarkBtn.disabled = false;
+    bookmarkBtn.classList.toggle('primary', !!prompt.userReactions?.bookmark);
+    bookmarkBtn.textContent = `🔖 ${prompt.userReactions?.bookmark ? 'Saved' : 'Bookmark'}`;
+  }
+}
+
+async function loadLabPrompts() {
+  try {
+    const prompts = await fetch('/api/prompts', { headers: getUserHeaders() });
+    const payload = await prompts.json();
+    if (!prompts.ok) throw new Error(payload?.error || 'Failed to load prompts');
+    labState.prompts = Array.isArray(payload) ? payload : [];
+    labState.selectedId = labState.prompts[0]?.id ?? null;
+    renderLabPromptList();
+    renderLabPromptDetail();
+  } catch (error) {
+    console.error(error);
+    const context = document.getElementById('lab-detail-context');
+    if (context) context.textContent = 'Unable to load prompts right now.';
+  }
+}
+
+async function handleLabReaction(type) {
+  const prompt = labState.prompts.find((p) => p.id === labState.selectedId);
+  if (!prompt) return;
+  const method = prompt.userReactions?.[type] ? 'DELETE' : 'POST';
+  try {
+    const response = await fetch('/api/reactions', {
+      method,
+      headers: { 'Content-Type': 'application/json', ...getUserHeaders() },
+      body: JSON.stringify({ promptId: prompt.id, type }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload?.error || 'Reaction failed');
+    const normalizedType = payload.type || type;
+    prompt.reactionCounts = { ...prompt.reactionCounts, [normalizedType]: payload.count };
+    prompt.userReactions = { ...prompt.userReactions, [normalizedType]: payload.userReacted };
+    renderLabPromptList();
+    renderLabPromptDetail();
+  } catch (error) {
+    console.error(error);
+    alert('Unable to update reaction. Please try again.');
+  }
+}
+
+async function loadLibrary() {
+  const list = document.getElementById('library-list');
+  const empty = document.getElementById('library-empty');
+  if (!list) return;
+  list.innerHTML = '';
+  try {
+    const response = await fetch('/api/library', { headers: getUserHeaders() });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload?.error || 'Failed to load library');
+    const prompts = Array.isArray(payload) ? payload : [];
+    if (!prompts.length && empty) empty.hidden = false;
+    prompts.forEach((prompt) => list.appendChild(buildCompactPromptCard(prompt)));
+  } catch (error) {
+    console.error(error);
+    const errorMsg = document.createElement('p');
+    errorMsg.className = 'muted';
+    errorMsg.textContent = 'Unable to load your library right now.';
+    list.appendChild(errorMsg);
+  }
+}
+
 const sandboxState = {
   runs: [],
   activeResponse: '',
+  activeRun: null,
   loading: false,
 };
 
@@ -588,31 +855,60 @@ function mapRunRecord(run = {}) {
   };
 }
 
-export async function runSandboxExperiment({ system, prompt, input, model, temperature, maxTokens }) {
-  const response = await fetch('/api/sandbox/run', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemText: system,
-      promptText: prompt,
-      inputText: input,
-      model,
-      temperature,
-      maxTokens,
-      user: CURRENT_USER,
-    }),
+function buildLocalSandboxRun({ system, prompt, input, model, temperature, maxTokens, response }) {
+  const preview = response ||
+    [
+      'Sandbox preview — no backend available right now.',
+      system ? `System:\n${system}` : null,
+      prompt ? `Prompt:\n${prompt}` : null,
+      input ? `Input:\n${input}` : null,
+      '\nSimulated response based on your inputs. Connect the sandbox API to see live model output.',
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+  return mapRunRecord({
+    system,
+    prompt,
+    input,
+    response: preview,
+    model,
+    temperature,
+    maxTokens,
   });
+}
 
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(payload?.error || 'Failed to reach sandbox service');
+export async function runSandboxExperiment({ system, prompt, input, model, temperature, maxTokens }) {
+  try {
+    const response = await fetch('/api/sandbox/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemText: system,
+        promptText: prompt,
+        inputText: input,
+        model,
+        temperature,
+        maxTokens,
+        user: CURRENT_USER,
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload?.error || 'Failed to reach sandbox service');
+    }
+
+    const run = payload.run
+      ? mapRunRecord({ ...payload.run, systemText: system, model, temperature, maxTokens })
+      : mapRunRecord({ system, prompt, input, response: payload.text, model, temperature, maxTokens });
+
+    return { text: payload.text ?? run.response, run };
+  } catch (error) {
+    console.warn('Falling back to local sandbox preview', error);
+    const fallbackRun = buildLocalSandboxRun({ system, prompt, input, model, temperature, maxTokens });
+    return { text: fallbackRun.response, run: fallbackRun, error };
   }
-
-  const run = payload.run
-    ? mapRunRecord({ ...payload.run, systemText: system, model, temperature, maxTokens })
-    : mapRunRecord({ system, prompt, input, response: payload.text, model, temperature, maxTokens });
-
-  return { text: payload.text ?? run.response, run };
 }
 
 function setSandboxStatus(message, tone = 'muted') {
@@ -653,10 +949,19 @@ function renderHistory() {
     button.type = 'button';
     const previewSource = run.prompt || run.promptText || '';
     const preview = previewSource.length > 42 ? `${previewSource.slice(0, 42)}…` : previewSource;
-    button.innerHTML = `<span class="history-title">${preview || 'Untitled prompt'}</span><span class="history-meta">${formatTimestamp(new Date(run.createdAt))} · ${run.model}</span>`;
+    const metaParts = [
+      formatTimestamp(new Date(run.createdAt)),
+      run.model,
+      `temp ${Number(run.temperature).toFixed(2)}`,
+      `${run.maxTokens} toks`,
+    ];
+    button.innerHTML = `<span class="history-title">${preview || 'Untitled prompt'}</span><span class="history-meta">${metaParts.join(
+      ' · ',
+    )}</span>`;
     button.addEventListener('click', () => {
       hydrateForm(run);
       sandboxState.activeResponse = run.response;
+      sandboxState.activeRun = run;
       renderResponse();
       setSandboxStatus('Restored settings from history.');
     });
@@ -667,14 +972,20 @@ function renderHistory() {
 function renderResponse() {
   const container = document.getElementById('response-body');
   const usage = document.getElementById('token-usage');
+  const modelBadge = document.getElementById('response-model');
   if (!container || !usage) return;
   if (!sandboxState.activeResponse) {
     container.textContent = 'Run the sandbox to see output.';
     usage.textContent = '';
+    if (modelBadge) modelBadge.textContent = 'Live sandbox';
     return;
   }
   container.textContent = sandboxState.activeResponse;
-  usage.textContent = 'Tokens: ~estimate';
+  const tokenEstimate = sandboxState.activeRun?.maxTokens
+    ? `${sandboxState.activeRun.maxTokens} requested`
+    : '~estimate';
+  usage.textContent = `Tokens: ${tokenEstimate}`;
+  if (modelBadge) modelBadge.textContent = sandboxState.activeRun?.model || 'Live sandbox';
 }
 
 function updateSessionBadges(runTime = null) {
@@ -703,16 +1014,22 @@ async function handleRun(event) {
   setLoading(true);
   setSandboxStatus('Sending prompt to the AI layer…');
   try {
-    const { text, run } = await runSandboxExperiment(values);
+    const { text, run, error } = await runSandboxExperiment(values);
+    const mappedRun = mapRunRecord(run);
     sandboxState.activeResponse = text;
-    sandboxState.runs.unshift(run);
+    sandboxState.activeRun = mappedRun;
+    sandboxState.runs.unshift(mappedRun);
     if (sandboxState.runs.length > 20) {
       sandboxState.runs = sandboxState.runs.slice(0, 20);
     }
     renderHistory();
     renderResponse();
     updateSessionBadges(run.createdAt);
-    setSandboxStatus('Experiment completed. Review the response below.', 'success');
+    if (error) {
+      setSandboxStatus('Sandbox backend unreachable. Showing a local preview instead.', 'warning');
+    } else {
+      setSandboxStatus('Experiment completed. Review the response below.', 'success');
+    }
   } catch (error) {
     console.error(error);
     setSandboxStatus(error?.message || 'Failed to reach the AI service. Please try again.', 'danger');
@@ -760,6 +1077,17 @@ function handleSaveAsPrompt() {
   setSandboxStatus('Saved as a prompt draft locally. Wire this into your prompts backend to persist.', 'success');
 }
 
+function handleCopyResponse() {
+  if (!sandboxState.activeResponse) {
+    setSandboxStatus('Run the sandbox first, then copy the output.', 'danger');
+    return;
+  }
+  navigator.clipboard
+    ?.writeText(sandboxState.activeResponse)
+    .then(() => setSandboxStatus('Response copied for feedback sharing.', 'success'))
+    .catch(() => setSandboxStatus('Unable to copy right now. Select and copy manually.', 'danger'));
+}
+
 async function loadSandboxHistory() {
   try {
     const response = await fetch('/api/sandbox/runs');
@@ -768,8 +1096,10 @@ async function loadSandboxHistory() {
     sandboxState.runs = Array.isArray(runs) ? runs.map(mapRunRecord) : [];
     renderHistory();
     if (sandboxState.runs[0]) {
-      sandboxState.activeResponse = sandboxState.runs[0].response;
-      hydrateForm(sandboxState.runs[0]);
+      const latest = sandboxState.runs[0];
+      sandboxState.activeResponse = latest.response;
+      sandboxState.activeRun = latest;
+      hydrateForm(latest);
       renderResponse();
       setSandboxStatus('Restored your latest sandbox run.');
     }
@@ -794,6 +1124,7 @@ function setupSandboxPage() {
   document.getElementById('launch-btn')?.addEventListener('click', handleRun);
   document.getElementById('reset-btn')?.addEventListener('click', handleReset);
   document.getElementById('save-prompt-btn')?.addEventListener('click', handleSaveAsPrompt);
+  document.getElementById('copy-response-btn')?.addEventListener('click', handleCopyResponse);
   const tempInput = document.getElementById('temperature-input');
   const tempValue = document.getElementById('temperature-value');
   tempInput?.addEventListener('input', () => {
@@ -804,6 +1135,29 @@ function setupSandboxPage() {
   maxInput?.addEventListener('input', () => {
     maxValue.textContent = maxInput.value;
   });
+}
+
+export function initializeLabUI() {
+  const list = document.getElementById('lab-prompt-list');
+  if (!list) return;
+  setupThemeToggle();
+  loadLabPrompts();
+  list.addEventListener('click', (event) => {
+    const card = event.target.closest('[data-prompt-id]');
+    if (!card) return;
+    labState.selectedId = Number(card.dataset.promptId);
+    renderLabPromptList();
+    renderLabPromptDetail();
+  });
+  document.getElementById('lab-like-btn')?.addEventListener('click', () => handleLabReaction('like'));
+  document.getElementById('lab-bookmark-btn')?.addEventListener('click', () => handleLabReaction('bookmark'));
+}
+
+export function initializeLibraryUI() {
+  const list = document.getElementById('library-list');
+  if (!list) return;
+  setupThemeToggle();
+  loadLibrary();
 }
 
 export function initializeWorkspaceUI() {

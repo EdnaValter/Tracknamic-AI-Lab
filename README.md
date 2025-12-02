@@ -59,3 +59,9 @@ Open `index.html` in your browser to explore the prompt workspace and feed inter
 - Visit `login.html` to sign in with a Tracknamic email (`@tracknamic.com` or `@tracknamic.ai`).
 - Authenticated teammates can access `index.html`, `sandbox.html`, and the new `lab.html` overview. Unauthenticated visitors are redirected back to `login.html`.
 - The in-browser auth layer stores a user record (id, name, email) to tag new prompts and expose current-user data to the UI and API helpers.
+
+## Step 14: Internal launch
+
+- Invite 2–4 trusted developers to use the workspace or sandbox for a real task, then ask three questions verbatim: “Was it easy to find something useful?”, “Did Sandbox feel natural?”, and “What was the most annoying thing?”.
+- Use the [Internal Pilot guide](./INTERNAL_PILOT.md) to log who participated and keep the improvement list to 3–5 items before broadening rollout.
+- Small changes from the first pilot include a **Clear filters** reset in the feed, richer sandbox history metadata (model, temperature, tokens), and a **Copy response** control for quick sharing.
