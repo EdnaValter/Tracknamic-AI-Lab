@@ -2,20 +2,97 @@ import 'dotenv/config';
 import express from 'express';
 import OpenAI from 'openai';
 import { PrismaClient } from '@prisma/client';
+import path from 'node:path';
 
 const prisma = new PrismaClient();
 const app = express();
 const port = process.env.PORT || 3000;
+const rootDir = process.cwd();
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
 app.use(express.json());
+app.get('/lab/:id', (req, res) => {
+  return res.sendFile(path.join(rootDir, 'lab.html'));
+});
+app.use(express.static(rootDir));
+
+app.get('/api/prompts', async (req, res) => {
+  try {
+    const prompts = await prisma.prompt.findMany({ orderBy: { createdAt: 'desc' }, include: promptInclude });
+    return res.json(prompts);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to load prompts' });
+  }
+});
+
+app.get('/api/prompts/:id', async (req, res) => {
+  const promptId = Number(req.params.id);
+  if (Number.isNaN(promptId)) {
+    return res.status(400).json({ error: 'Prompt id must be a number' });
+  }
+  try {
+    const prompt = await prisma.prompt.findUnique({ where: { id: promptId }, include: promptInclude });
+    if (!prompt) return res.status(404).json({ error: 'Prompt not found' });
+    return res.json(prompt);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Unexpected error retrieving prompt' });
+  }
+});
+
+app.post('/api/prompts', async (req, res) => {
+  const { title, problem, context, promptText, exampleInput = '', exampleOutput = '', reflection = '', tags = [], user } =
+    req.body ?? {};
+  if (!title?.trim() || !problem?.trim() || !context?.trim() || !promptText?.trim()) {
+    return res.status(400).json({ error: 'Title, problem, context, and prompt text are required.' });
+  }
+  try {
+    const actor = await ensureUser(user);
+    const normalizedTags = normalizeTagNames(tags);
+    const prompt = await prisma.prompt.create({
+      data: {
+        title: title.trim(),
+        problem: problem.trim(),
+        context: context.trim(),
+        promptText: promptText.trim(),
+        exampleInput: exampleInput?.trim() ?? '',
+        exampleOutput: exampleOutput?.trim() ?? '',
+        reflection: reflection?.trim() || null,
+        authorId: actor.id,
+        tags: {
+          create: normalizedTags.map((tagName) => ({
+            tag: {
+              connectOrCreate: {
+                where: { name: tagName },
+                create: { name: tagName },
+              },
+            },
+          })),
+        },
+      },
+      include: promptInclude,
+    });
+    return res.status(201).json(prompt);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to create prompt' });
+  }
+});
 
 const DEFAULT_SANDBOX_USER = {
   email: 'casey@tracknamic.com',
   name: 'Casey Demo',
+};
+
+const promptInclude = {
+  author: true,
+  tags: { include: { tag: true } },
+  reactions: true,
+  comments: { include: { user: true } },
 };
 
 async function ensureUser({ email, name } = DEFAULT_SANDBOX_USER) {
@@ -26,6 +103,17 @@ async function ensureUser({ email, name } = DEFAULT_SANDBOX_USER) {
     update: { name: displayName },
     create: { email: normalizedEmail, name: displayName },
   });
+}
+
+function normalizeTagNames(tags = []) {
+  return Array.from(
+    new Set(
+      (tags || [])
+        .map((tag) => (typeof tag === 'string' ? tag : String(tag || '')))
+        .map((tag) => tag.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  );
 }
 
 async function generateSandboxResponse({ systemText, promptText, inputText, model, temperature, maxTokens }) {
@@ -71,12 +159,7 @@ app.get('/prompts/:id', async (req, res) => {
   try {
     const prompt = await prisma.prompt.findUnique({
       where: { id: promptId },
-      include: {
-        author: true,
-        tags: { include: { tag: true } },
-        reactions: true,
-        comments: { include: { user: true } },
-      },
+      include: promptInclude,
     });
 
     if (!prompt) {
