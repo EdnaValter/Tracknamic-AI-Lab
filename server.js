@@ -62,6 +62,50 @@ async function generateSandboxResponse({ systemText, promptText, inputText, mode
   return { text };
 }
 
+function deriveActorFromRequest(req) {
+  const headerEmail = req.headers['x-user-email'];
+  const headerName = req.headers['x-user-name'];
+  if (headerEmail) return { email: headerEmail, name: headerName }; // validated in ensureUser
+  const { user } = req.body || {};
+  if (user?.email) return user;
+  return DEFAULT_SANDBOX_USER;
+}
+
+function mapPrompt(prompt, actorId) {
+  const reactionCounts = prompt.reactions.reduce(
+    (acc, reaction) => ({
+      ...acc,
+      [reaction.type.toLowerCase()]: (acc[reaction.type.toLowerCase()] || 0) + 1,
+    }),
+    {},
+  );
+  const userReactions = prompt.reactions.reduce(
+    (acc, reaction) => ({
+      ...acc,
+      [reaction.type.toLowerCase()]: reaction.userId === actorId || acc[reaction.type.toLowerCase()] === true,
+    }),
+    {},
+  );
+
+  return {
+    id: prompt.id,
+    title: prompt.title,
+    problem: prompt.problem,
+    context: prompt.context,
+    promptText: prompt.promptText,
+    exampleInput: prompt.exampleInput,
+    exampleOutput: prompt.exampleOutput,
+    reflection: prompt.reflection,
+    createdAt: prompt.createdAt,
+    updatedAt: prompt.updatedAt,
+    author: { id: prompt.author.id, name: prompt.author.name, email: prompt.author.email },
+    tags: prompt.tags.map((entry) => entry.tag.name),
+    reactionCounts: { like: reactionCounts.like || 0, bookmark: reactionCounts.bookmark || 0 },
+    userReactions: { like: !!userReactions.like, bookmark: !!userReactions.bookmark },
+    commentCount: prompt.comments.length,
+  };
+}
+
 app.get('/prompts/:id', async (req, res) => {
   const promptId = Number(req.params.id);
   if (Number.isNaN(promptId)) {
@@ -87,6 +131,117 @@ app.get('/prompts/:id', async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'Unexpected error retrieving prompt' });
+  }
+});
+
+app.get('/api/prompts', async (req, res) => {
+  try {
+    const actor = await ensureUser(deriveActorFromRequest(req));
+    const prompts = await prisma.prompt.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: true,
+        tags: { include: { tag: true } },
+        reactions: true,
+        comments: true,
+      },
+    });
+
+    return res.json(prompts.map((prompt) => mapPrompt(prompt, actor.id)));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to load prompts' });
+  }
+});
+
+app.get('/api/prompts/:id', async (req, res) => {
+  const promptId = Number(req.params.id);
+  if (Number.isNaN(promptId)) {
+    return res.status(400).json({ error: 'Prompt id must be a number' });
+  }
+
+  try {
+    const actor = await ensureUser(deriveActorFromRequest(req));
+    const prompt = await prisma.prompt.findUnique({
+      where: { id: promptId },
+      include: {
+        author: true,
+        tags: { include: { tag: true } },
+        reactions: true,
+        comments: true,
+      },
+    });
+
+    if (!prompt) {
+      return res.status(404).json({ error: 'Prompt not found' });
+    }
+
+    return res.json(mapPrompt(prompt, actor.id));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to load prompt detail' });
+  }
+});
+
+app.post('/api/reactions', async (req, res) => {
+  const { promptId, type } = req.body || {};
+  if (!promptId || !['like', 'bookmark'].includes(String(type).toLowerCase())) {
+    return res.status(400).json({ error: 'promptId and valid reaction type are required' });
+  }
+
+  try {
+    const actor = await ensureUser(deriveActorFromRequest(req));
+    const reactionType = String(type).toUpperCase();
+    await prisma.reaction.upsert({
+      where: { userId_promptId_type: { userId: actor.id, promptId: Number(promptId), type: reactionType } },
+      update: {},
+      create: { userId: actor.id, promptId: Number(promptId), type: reactionType },
+    });
+
+    const count = await prisma.reaction.count({ where: { promptId: Number(promptId), type: reactionType } });
+    return res.json({ promptId: Number(promptId), type: reactionType.toLowerCase(), count, userReacted: true });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to save reaction' });
+  }
+});
+
+app.delete('/api/reactions', async (req, res) => {
+  const { promptId, type } = req.body || {};
+  if (!promptId || !['like', 'bookmark'].includes(String(type).toLowerCase())) {
+    return res.status(400).json({ error: 'promptId and valid reaction type are required' });
+  }
+
+  try {
+    const actor = await ensureUser(deriveActorFromRequest(req));
+    const reactionType = String(type).toUpperCase();
+    await prisma.reaction.deleteMany({ where: { userId: actor.id, promptId: Number(promptId), type: reactionType } });
+    const count = await prisma.reaction.count({ where: { promptId: Number(promptId), type: reactionType } });
+    return res.json({ promptId: Number(promptId), type: reactionType.toLowerCase(), count, userReacted: false });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to remove reaction' });
+  }
+});
+
+app.get('/api/library', async (req, res) => {
+  try {
+    const actor = await ensureUser(deriveActorFromRequest(req));
+    const prompts = await prisma.prompt.findMany({
+      where: { reactions: { some: { userId: actor.id, type: 'BOOKMARK' } } },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        author: true,
+        tags: { include: { tag: true } },
+        reactions: true,
+        comments: true,
+      },
+    });
+
+    return res.json(prompts.map((prompt) => mapPrompt(prompt, actor.id)));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to load library' });
   }
 });
 

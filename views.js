@@ -213,33 +213,60 @@ const labView = `
   <section class="panel lab-panel">
     <div class="section-header">
       <div>
-        <p class="eyebrow">Internal tools</p>
-        <h1>AI Lab overview</h1>
-        <p class="muted">Authenticated teammates can explore the workspace, launch the sandbox, and access this lab guide.</p>
+        <p class="eyebrow">AI Lab</p>
+        <h1>Team prompt library</h1>
+        <p class="muted">Browse live prompts from the backend, review reactions, and bookmark the ones you want to keep.</p>
       </div>
-      <div class="pill">Tracknamic SSO required</div>
+      <div class="pill">Realtime reactions</div>
     </div>
-    <div class="grid grid-2 lab-grid">
+
+    <div class="lab-layout">
       <div class="card">
-        <h3>Workspace</h3>
-        <p class="muted">Draft, preview, and publish prompts to the shared feed with reactions and comments.</p>
-        <a class="secondary" href="index.html" data-route="workspace">Go to workspace</a>
+        <div class="card-header">
+          <h3>Prompt feed</h3>
+          <p class="muted small">Counts reflect backend reactions.</p>
+        </div>
+        <div id="lab-prompt-list" class="prompt-list compact" aria-live="polite"></div>
       </div>
-      <div class="card">
-        <h3>Launch Sandbox</h3>
-        <p class="muted">Run quick experiments with system instructions, temperature, and token controls.</p>
-        <a class="secondary" href="sandbox.html" data-route="sandbox">Open sandbox</a>
+
+      <div class="card" id="lab-prompt-detail" aria-live="polite">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow" id="lab-detail-meta"></p>
+            <h3 id="lab-detail-title">Select a prompt</h3>
+          </div>
+          <div class="pill" id="lab-detail-reactions"></div>
+        </div>
+        <p class="muted" id="lab-detail-context">Choose a prompt from the feed to see the full text.</p>
+        <div class="pill-row" id="lab-detail-tags"></div>
+        <pre class="code-block" id="lab-detail-body">Prompt text will appear here.</pre>
+        <div class="inline">
+          <button class="chip" id="lab-like-btn" data-reaction="like">👍 Like</button>
+          <button class="chip" id="lab-bookmark-btn" data-reaction="bookmark">🔖 Bookmark</button>
+        </div>
+        <p class="small muted" id="lab-detail-comments"></p>
       </div>
-      <div class="card">
-        <h3>User identity</h3>
-        <p class="muted">Backend keeps a Tracknamic user record so prompts and runs show real ownership.</p>
-        <code class="code-block" id="user-json"></code>
+    </div>
+  </section>
+`;
+
+const libraryView = `
+  <section class="panel lab-panel">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">My Library</p>
+        <h1>Bookmarked prompts</h1>
+        <p class="muted">Prompts you have saved with the 🔖 action appear here.</p>
       </div>
-      <div class="card">
-        <h3>Access control</h3>
-        <p class="muted">Unauthenticated visitors are redirected to login before viewing any lab routes.</p>
-        <p class="pill">Protected: /, /lab, /sandbox</p>
+      <div class="pill">Private to you</div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h3>Saved prompts</h3>
+        <p class="muted small">Powered by backend bookmarks.</p>
       </div>
+      <div id="library-list" class="prompt-list compact" aria-live="polite"></div>
+      <p class="muted small" id="library-empty" hidden>You have not bookmarked any prompts yet.</p>
     </div>
   </section>
 `;
@@ -360,6 +387,7 @@ const sandboxView = `
 
 export function getViewTemplate(route) {
   if (route === 'lab') return labView;
+  if (route === 'library') return libraryView;
   if (route === 'sandbox') return sandboxView;
   return workspaceView;
 }
