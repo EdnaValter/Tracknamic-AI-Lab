@@ -220,7 +220,7 @@ const labView = `
       <div class="lab-search-row">
         <label class="search" for="lab-search">
           <span>Search prompts</span>
-          <input id="lab-search" type="search" placeholder="Search by title or problem" />
+          <input id="lab-search" type="search" placeholder="Search by title, problem, or context" />
         </label>
         <div class="chip-row" id="lab-tag-chips" aria-label="Filter by tag"></div>
       </div>
@@ -242,6 +242,15 @@ const labView = `
           <div>
             <p class="eyebrow">Latest</p>
             <h2>Latest prompts</h2>
+          </div>
+          <div class="lab-controls" aria-label="Prompt controls">
+            <div class="active-filter-row" id="lab-active-filters"></div>
+            <label class="sr-only" for="lab-sort">Sort prompts</label>
+            <select id="lab-sort" aria-label="Sort prompts">
+              <option value="newest">Newest</option>
+              <option value="liked">Most liked</option>
+              <option value="bookmarked">Most bookmarked</option>
+            </select>
           </div>
         </div>
         <p class="muted small" id="lab-status" role="status">Loading prompts...</p>

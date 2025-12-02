@@ -4,6 +4,7 @@ const state = {
   featured: null,
   searchTerm: '',
   activeTag: '',
+  sortOrder: 'newest',
   detailId: null,
 };
 
@@ -21,7 +22,7 @@ function getDetailIdFromPath() {
   return segments[1] ?? null;
 }
 
-function applyQueryParams({ q, tag } = {}) {
+function applyQueryParams({ q, tag, sort } = {}) {
   const url = new URL(window.location.href);
   if (q) {
     url.searchParams.set('q', q);
@@ -32,6 +33,11 @@ function applyQueryParams({ q, tag } = {}) {
     url.searchParams.set('tag', tag);
   } else {
     url.searchParams.delete('tag');
+  }
+  if (sort && sort !== 'newest') {
+    url.searchParams.set('sort', sort);
+  } else {
+    url.searchParams.delete('sort');
   }
   window.history.replaceState({}, '', url.toString());
 }
@@ -90,6 +96,23 @@ function renderTagFilters(container, tags, activeTag) {
     .join('');
 }
 
+function renderActiveFilters() {
+  const container = document.getElementById('lab-active-filters');
+  if (!container) return;
+  const filters = [];
+  if (state.searchTerm) {
+    filters.push(`<span class="chip solid">Search: “${state.searchTerm}”</span>`);
+  }
+  if (state.activeTag) {
+    filters.push(`<span class="chip ghost">Tag: #${state.activeTag}</span>`);
+  }
+  if (!filters.length) {
+    container.innerHTML = '<span class="muted small">Showing all prompts</span>';
+    return;
+  }
+  container.innerHTML = filters.join('');
+}
+
 function setStatus(message) {
   const statusEl = document.getElementById('lab-status');
   if (!statusEl) return;
@@ -121,6 +144,7 @@ async function fetchPrompts() {
   const params = new URLSearchParams();
   if (state.searchTerm) params.set('q', state.searchTerm);
   if (state.activeTag) params.set('tag', state.activeTag);
+  if (state.sortOrder && state.sortOrder !== 'newest') params.set('sort', state.sortOrder);
   const query = params.toString();
   const response = await fetch(query ? `/api/prompts?${query}` : '/api/prompts');
   if (!response.ok) {
@@ -192,6 +216,7 @@ async function hydrateLab() {
     state.tags = data.tags ?? [];
     setStatus(state.prompts.length ? '' : 'No prompts found.');
     renderTagFilters(document.getElementById('lab-tag-chips'), state.tags, state.activeTag);
+    renderActiveFilters();
     renderPromptList(document.getElementById('prompt-grid'), state.prompts);
     state.featured = chooseFeatured(state.prompts);
     renderFeatured(state.featured);
@@ -221,9 +246,11 @@ export function initializeLabUI() {
   const tagContainer = document.getElementById('lab-tag-chips');
   const promptGrid = document.getElementById('prompt-grid');
   const featuredGrid = document.getElementById('featured-card');
+  const sortSelect = document.getElementById('lab-sort');
 
   state.searchTerm = new URLSearchParams(window.location.search).get('q') ?? '';
   state.activeTag = new URLSearchParams(window.location.search).get('tag') ?? '';
+  state.sortOrder = new URLSearchParams(window.location.search).get('sort') ?? 'newest';
   state.detailId = getDetailIdFromPath();
 
   if (searchInput) {
@@ -232,7 +259,7 @@ export function initializeLabUI() {
       'input',
       debounce((event) => {
         state.searchTerm = event.target.value.trim();
-        applyQueryParams({ q: state.searchTerm, tag: state.activeTag });
+        applyQueryParams({ q: state.searchTerm, tag: state.activeTag, sort: state.sortOrder });
         hydrateLab();
       }, 200),
     );
@@ -244,7 +271,17 @@ export function initializeLabUI() {
       if (!button) return;
       const tagValue = button.dataset.tag;
       state.activeTag = state.activeTag === tagValue ? '' : tagValue;
-      applyQueryParams({ q: state.searchTerm, tag: state.activeTag });
+      applyQueryParams({ q: state.searchTerm, tag: state.activeTag, sort: state.sortOrder });
+      renderActiveFilters();
+      hydrateLab();
+    });
+  }
+
+  if (sortSelect) {
+    sortSelect.value = state.sortOrder;
+    sortSelect.addEventListener('change', (event) => {
+      state.sortOrder = event.target.value;
+      applyQueryParams({ q: state.searchTerm, tag: state.activeTag, sort: state.sortOrder });
       hydrateLab();
     });
   }

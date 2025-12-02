@@ -118,7 +118,7 @@ app.get('/prompts/:id', async (req, res) => {
 });
 
 app.get('/api/prompts', async (req, res) => {
-  const { q, tag } = req.query ?? {};
+  const { q, tag, sort } = req.query ?? {};
 
   const filters = [];
   if (q?.trim()) {
@@ -126,6 +126,7 @@ app.get('/api/prompts', async (req, res) => {
       OR: [
         { title: { contains: q.trim(), mode: 'insensitive' } },
         { problem: { contains: q.trim(), mode: 'insensitive' } },
+        { context: { contains: q.trim(), mode: 'insensitive' } },
       ],
     });
   }
@@ -169,7 +170,20 @@ app.get('/api/prompts', async (req, res) => {
       };
     });
 
-    return res.json({ prompts: mapped, tags });
+    const sorted = mapped.sort((a, b) => {
+      const sortKey = typeof sort === 'string' ? sort.toLowerCase() : 'newest';
+      if (sortKey === 'liked') {
+        const diff = (b.reactionSummary?.LIKE ?? 0) - (a.reactionSummary?.LIKE ?? 0);
+        if (diff !== 0) return diff;
+      }
+      if (sortKey === 'bookmarked') {
+        const diff = (b.reactionSummary?.BOOKMARK ?? 0) - (a.reactionSummary?.BOOKMARK ?? 0);
+        if (diff !== 0) return diff;
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return res.json({ prompts: sorted, tags });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'Failed to load prompts' });
