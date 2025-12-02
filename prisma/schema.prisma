@@ -82,9 +82,13 @@ model Comment {
 model SandboxRun {
   id         Int      @id @default(autoincrement())
   userId     Int
+  systemText String?
   promptText String
   inputText  String
   outputText String
+  model      String   @default("gpt-4o")
+  temperature Float   @default(0.2)
+  maxTokens   Int     @default(512)
   createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])

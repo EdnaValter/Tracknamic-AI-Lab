@@ -205,9 +205,13 @@ app.post('/api/sandbox/run', async (req, res) => {
     const run = await prisma.sandboxRun.create({
       data: {
         userId: actor.id,
+        systemText: systemText ?? '',
         promptText: promptText.trim(),
         inputText: inputText ?? '',
         outputText: aiResponse.text,
+        model: model ?? 'gpt-4o',
+        temperature: typeof temperature === 'number' ? temperature : 0.2,
+        maxTokens: typeof maxTokens === 'number' ? maxTokens : 512,
       },
       include: { user: true },
     });
