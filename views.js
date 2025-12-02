@@ -241,6 +241,72 @@ const labView = `
       <p class="muted small" id="library-empty" hidden>You have not bookmarked any prompts yet.</p>
     </div>
 
+    <section class="lab-section prompting-guide" aria-label="Prompting guide">
+      <div class="section-header compact">
+        <div>
+          <p class="eyebrow">Prompting Guide</p>
+          <h2>Everyday ChatGPT prompting guide</h2>
+          <p class="muted">Follow these steps to craft clear, actionable prompts for better results.</p>
+        </div>
+      </div>
+      <div class="guide-grid">
+        <article class="guide-card guide-role">
+          <div class="guide-badge">Step 1 - Role Setting</div>
+          <ul>
+            <li>Assign a role (expert, engineer, analyst)</li>
+            <li>Tone, voice, format</li>
+            <li>Role, shape, style, system</li>
+            <li>ChatGPT - temperature</li>
+          </ul>
+        </article>
+        <article class="guide-card guide-clarity">
+          <div class="guide-badge">Step 2 - Clarity</div>
+          <ul>
+            <li>Say exactly what you want</li>
+            <li>Provide context</li>
+            <li>If you have data, include it</li>
+            <li>Use measurable terms (e.g., 10 words)</li>
+          </ul>
+        </article>
+        <article class="guide-card guide-specificity">
+          <div class="guide-badge">Step 3 - Specificity</div>
+          <ul>
+            <li>Choose tone (friendly, professional, casual)</li>
+            <li>Constrain length (e.g., 3 paragraphs)</li>
+            <li>Mention length (e.g., # paragraphs)</li>
+          </ul>
+        </article>
+        <article class="guide-card guide-iterative">
+          <div class="guide-badge">Step 4 - Iterative Refinement</div>
+          <ul>
+            <li>Start simple, refine in follow-ups</li>
+            <li>Iterate on partial outputs</li>
+            <li>Ask for examples or comparisons</li>
+            <li>Don't cram everything in one prompt</li>
+          </ul>
+        </article>
+        <article class="guide-card guide-context">
+          <div class="guide-badge">Step 5 - Context</div>
+          <ul>
+            <li>State who the answer is for</li>
+            <li>Include examples as input</li>
+            <li>Be explicit about format</li>
+            <li>Specify the output length</li>
+            <li>Break into parts; request multiple outputs</li>
+          </ul>
+        </article>
+        <article class="guide-card guide-reasoning">
+          <div class="guide-badge">Step 6 - Reasoning</div>
+          <ul>
+            <li>Ask for step-by-step explanations</li>
+            <li>Use "Plan-&gt;-Answer" or "Steps-&gt;-Result"</li>
+            <li>Ask for alternatives</li>
+            <li>Improve accuracy and clarity</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
     <div class="lab-sections">
       <section class="lab-section" aria-label="Featured prompt">
         <div class="section-header compact">
