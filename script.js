@@ -853,6 +853,7 @@ async function loadLibrary() {
   const empty = document.getElementById('library-empty');
   if (!list) return;
   list.innerHTML = '';
+  if (empty) empty.hidden = true;
   try {
     const response = await fetch('/api/library', { headers: getUserHeaders() });
     const payload = await response.json();
@@ -918,8 +919,10 @@ function buildLocalSandboxRun({ system, prompt, input, model, temperature, maxTo
 }
 
 export async function runSandboxExperiment({ system, prompt, input, model, temperature, maxTokens }) {
+  let response;
+
   try {
-    const response = await fetch('/api/sandbox/run', {
+    response = await fetch('/api/sandbox/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -932,22 +935,24 @@ export async function runSandboxExperiment({ system, prompt, input, model, tempe
         user: CURRENT_USER,
       }),
     });
-
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(payload?.error || 'Failed to reach sandbox service');
-    }
-
-    const run = payload.run
-      ? mapRunRecord({ ...payload.run, systemText: system, model, temperature, maxTokens })
-      : mapRunRecord({ system, prompt, input, response: payload.text, model, temperature, maxTokens });
-
-    return { text: payload.text ?? run.response, run };
   } catch (error) {
     console.warn('Falling back to local sandbox preview', error);
     const fallbackRun = buildLocalSandboxRun({ system, prompt, input, model, temperature, maxTokens });
     return { text: fallbackRun.response, run: fallbackRun, error };
   }
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload?.error || 'Failed to reach sandbox service');
+    error.payload = payload;
+    throw error;
+  }
+
+  const run = payload.run
+    ? mapRunRecord({ ...payload.run, systemText: system, model, temperature, maxTokens })
+    : mapRunRecord({ system, prompt, input, response: payload.text, model, temperature, maxTokens });
+
+  return { text: payload.text ?? run.response, run };
 }
 
 function setSandboxStatus(message, tone = 'muted') {
