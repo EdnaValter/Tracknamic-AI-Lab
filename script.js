@@ -814,7 +814,30 @@ async function loadLabPrompts() {
     const prompts = await fetch('/api/prompts', { headers: getUserHeaders() });
     const payload = await prompts.json();
     if (!prompts.ok) throw new Error(payload?.error || 'Failed to load prompts');
-    labState.prompts = Array.isArray(payload) ? payload : [];
+    const promptList = Array.isArray(payload?.prompts)
+      ? payload.prompts
+      : Array.isArray(payload)
+        ? payload
+        : [];
+    labState.prompts = promptList.map((prompt) => {
+      const tags = (prompt.tags || [])
+        .map((tag) => {
+          if (typeof tag === 'string') return tag;
+          if (typeof tag === 'object' && tag !== null) {
+            return tag.tag?.name || tag.name || '';
+          }
+          return '';
+        })
+        .filter(Boolean);
+
+      const reactionSummary = prompt.reactionSummary || {};
+      const reactionCounts = prompt.reactionCounts || {
+        like: reactionSummary.LIKE ?? 0,
+        bookmark: reactionSummary.BOOKMARK ?? 0,
+      };
+
+      return { ...prompt, tags, reactionCounts };
+    });
     labState.selectedId = labState.prompts[0]?.id ?? null;
     renderLabPromptList();
     renderLabPromptDetail();
