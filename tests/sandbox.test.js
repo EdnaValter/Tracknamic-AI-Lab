@@ -133,22 +133,23 @@ test('runSandboxExperiment surfaces API errors', async () => {
     globalThis.fetch = async () => ({
       ok: false,
       async json() {
-        return { error: 'boom' };
+        return { error: 'boom', text: 'fallback text' };
       },
     });
 
-    await assert.rejects(
-      () =>
-        runSandboxExperiment({
-          system: '',
-          prompt: 'prompt',
-          input: '',
-          model: 'gpt-4o',
-          temperature: 0.2,
-          maxTokens: 128,
-        }),
-      /boom/,
-    );
+    const { text, run, error } = await runSandboxExperiment({
+      system: '',
+      prompt: 'prompt',
+      input: '',
+      model: 'gpt-4o',
+      temperature: 0.2,
+      maxTokens: 128,
+    });
+
+    assert.ok(error instanceof Error);
+    assert.match(error.message, /boom/);
+    assert.ok(text.includes('fallback text'));
+    assert.strictEqual(run.prompt, 'prompt');
   } finally {
     globalThis.fetch = originalFetch;
   }

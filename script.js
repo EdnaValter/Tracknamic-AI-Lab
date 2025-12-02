@@ -965,10 +965,21 @@ export async function runSandboxExperiment({ system, prompt, input, model, tempe
   }
 
   const payload = await response.json().catch(() => ({}));
+
   if (!response.ok) {
     const error = new Error(payload?.error || 'Failed to reach sandbox service');
     error.payload = payload;
-    throw error;
+    console.warn('Sandbox API returned an error. Falling back to local preview.', error);
+    const fallbackRun = buildLocalSandboxRun({
+      system,
+      prompt,
+      input,
+      model,
+      temperature,
+      maxTokens,
+      response: payload?.text,
+    });
+    return { text: fallbackRun.response, run: fallbackRun, error };
   }
 
   const run = payload.run
