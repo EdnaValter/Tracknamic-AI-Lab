@@ -684,31 +684,60 @@ function mapRunRecord(run = {}) {
   };
 }
 
-export async function runSandboxExperiment({ system, prompt, input, model, temperature, maxTokens }) {
-  const response = await fetch('/api/sandbox/run', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemText: system,
-      promptText: prompt,
-      inputText: input,
-      model,
-      temperature,
-      maxTokens,
-      user: CURRENT_USER,
-    }),
+function buildLocalSandboxRun({ system, prompt, input, model, temperature, maxTokens, response }) {
+  const preview = response ||
+    [
+      'Sandbox preview — no backend available right now.',
+      system ? `System:\n${system}` : null,
+      prompt ? `Prompt:\n${prompt}` : null,
+      input ? `Input:\n${input}` : null,
+      '\nSimulated response based on your inputs. Connect the sandbox API to see live model output.',
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+  return mapRunRecord({
+    system,
+    prompt,
+    input,
+    response: preview,
+    model,
+    temperature,
+    maxTokens,
   });
+}
 
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(payload?.error || 'Failed to reach sandbox service');
+export async function runSandboxExperiment({ system, prompt, input, model, temperature, maxTokens }) {
+  try {
+    const response = await fetch('/api/sandbox/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemText: system,
+        promptText: prompt,
+        inputText: input,
+        model,
+        temperature,
+        maxTokens,
+        user: CURRENT_USER,
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload?.error || 'Failed to reach sandbox service');
+    }
+
+    const run = payload.run
+      ? mapRunRecord({ ...payload.run, systemText: system, model, temperature, maxTokens })
+      : mapRunRecord({ system, prompt, input, response: payload.text, model, temperature, maxTokens });
+
+    return { text: payload.text ?? run.response, run };
+  } catch (error) {
+    console.warn('Falling back to local sandbox preview', error);
+    const fallbackRun = buildLocalSandboxRun({ system, prompt, input, model, temperature, maxTokens });
+    return { text: fallbackRun.response, run: fallbackRun, error };
   }
-
-  const run = payload.run
-    ? mapRunRecord({ ...payload.run, systemText: system, model, temperature, maxTokens })
-    : mapRunRecord({ system, prompt, input, response: payload.text, model, temperature, maxTokens });
-
-  return { text: payload.text ?? run.response, run };
 }
 
 function setSandboxStatus(message, tone = 'muted') {
@@ -814,7 +843,7 @@ async function handleRun(event) {
   setLoading(true);
   setSandboxStatus('Sending prompt to the AI layer…');
   try {
-    const { text, run } = await runSandboxExperiment(values);
+    const { text, run, error } = await runSandboxExperiment(values);
     const mappedRun = mapRunRecord(run);
     sandboxState.activeResponse = text;
     sandboxState.activeRun = mappedRun;
@@ -825,7 +854,11 @@ async function handleRun(event) {
     renderHistory();
     renderResponse();
     updateSessionBadges(run.createdAt);
-    setSandboxStatus('Experiment completed. Review the response below.', 'success');
+    if (error) {
+      setSandboxStatus('Sandbox backend unreachable. Showing a local preview instead.', 'warning');
+    } else {
+      setSandboxStatus('Experiment completed. Review the response below.', 'success');
+    }
   } catch (error) {
     console.error(error);
     setSandboxStatus(error?.message || 'Failed to reach the AI service. Please try again.', 'danger');
