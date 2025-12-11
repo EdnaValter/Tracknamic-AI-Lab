@@ -151,33 +151,6 @@ const workspaceView = `
 
 const labView = `
   <section class="panel lab-panel lab-feed">
-    <div class="lab-hero">
-      <div>
-        <p class="eyebrow">AI Lab</p>
-        <h1>Explore shared prompts</h1>
-        <p class="muted">Browse curated prompts, then jump into details to iterate in the sandbox.</p>
-      </div>
-      <div class="lab-search-row">
-        <label class="search" for="lab-search">
-          <span>Search prompts</span>
-          <input id="lab-search" type="search" placeholder="Search by title or problem" />
-        </label>
-        <div class="chip-row" id="lab-tag-chips" aria-label="Filter by tag"></div>
-      </div>
-      <div class="card">
-        <h3>Pilot feedback script</h3>
-        <p class="muted">Share these three prompts when you hand the lab to a teammate.</p>
-        <ul class="bullets">
-          <li>Was it easy to find something useful in the feed or sandbox?</li>
-          <li>Did the sandbox controls feel natural for running a real task?</li>
-          <li>What was the most annoying thing while completing your run?</li>
-        </ul>
-        <p class="pill">Copy and paste into Slack before they start</p>
-      </div>
-      <div id="library-list" class="prompt-list compact" aria-live="polite"></div>
-      <p class="muted small" id="library-empty" hidden>You have not bookmarked any prompts yet.</p>
-    </div>
-
     <section class="lab-section prompting-guide" aria-label="Prompting guide">
       <div class="section-header compact">
         <div>
@@ -236,7 +209,7 @@ const labView = `
           <div class="guide-badge">Step 6 - Reasoning</div>
           <ul>
             <li>Ask for step-by-step explanations</li>
-            <li>Use "Plan-&gt;-Answer" or "Steps-&gt;-Result"</li>
+            <li>Use "Plan->-Answer" or "Steps->-Result"</li>
             <li>Ask for alternatives</li>
             <li>Improve accuracy and clarity</li>
           </ul>
@@ -246,22 +219,12 @@ const labView = `
 
     <div class="lab-sections">
       <section class="lab-section" aria-label="Featured prompt">
-        <div class="section-header compact">
-          <div>
-            <p class="eyebrow">Featured</p>
-            <h2>Prompt spotlight</h2>
-          </div>
-        </div>
+        <div class="section-header compact"></div>
         <div id="featured-card" class="prompt-grid"></div>
       </section>
 
       <section class="lab-section" aria-label="Latest prompts">
-        <div class="section-header compact">
-          <div>
-            <p class="eyebrow">Latest</p>
-            <h2>Latest prompts</h2>
-          </div>
-        </div>
+        <div class="section-header compact"></div>
         <p class="muted small" id="lab-status" role="status">Loading prompts...</p>
         <div id="prompt-grid" class="prompt-grid"></div>
       </section>
