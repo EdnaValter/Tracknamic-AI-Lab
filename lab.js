@@ -125,7 +125,7 @@ async function fetchPrompts() {
   const response = await fetch(query ? `/api/prompts?${query}` : '/api/prompts');
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || 'Unable to load prompts');
+    throw new Error(error.error || '');
   }
   return response.json();
 }
