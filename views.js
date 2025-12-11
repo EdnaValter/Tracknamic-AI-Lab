@@ -130,47 +130,6 @@ const workspaceView = `
       </div>
     </div>
   </section>
-  <section class="hero" id="hero">
-    <div class="hero-text">
-      <p class="eyebrow">Developer-first prompt lab</p>
-      <h1>Experiment, share, and scale AI prompts with confidence.</h1>
-      <p class="lede">Tracknamic AI Lab bundles structured prompt authoring, team collaboration, and real-time insights into one sleek workspace.</p>
-      <div class="cta-row">
-        <button class="primary">Start building</button>
-        <button class="ghost">View public gallery</button>
-      </div>
-      <div class="stats" role="list">
-        <div class="stat" role="listitem">
-          <span class="value">120+</span>
-          <span class="label">Optimized prompts</span>
-        </div>
-        <div class="stat" role="listitem">
-          <span class="value">16ms</span>
-          <span class="label">Median latency</span>
-        </div>
-        <div class="stat" role="listitem">
-          <span class="value">99.9%</span>
-          <span class="label">Uptime</span>
-        </div>
-      </div>
-    </div>
-    <div class="hero-card" aria-label="Prompt editor preview">
-      <div class="card-header">
-        <div class="pill">Prompt draft</div>
-        <div class="status success">Optimized</div>
-      </div>
-      <div class="editor">
-        <div class="editor-line"># Persona</div>
-        <div class="editor-line">You are a senior TS mentor teaching clean architecture.</div>
-        <div class="editor-line"># Task</div>
-        <div class="editor-line">Explain repository patterns with examples.</div>
-      </div>
-      <div class="card-footer">
-        <button class="secondary">Improve</button>
-        <button class="primary">Summarize</button>
-      </div>
-    </div>
-  </section>
   <section class="modal" id="delete-modal" hidden aria-label="Delete prompt confirmation">
     <div class="modal-content">
       <header class="modal-header">
