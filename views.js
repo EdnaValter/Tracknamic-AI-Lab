@@ -278,11 +278,6 @@ const sandboxView = `
       <p class="eyebrow">Launch Sandbox</p>
       <h1>Experiment with prompts in real-time.</h1>
       <p class="lede">Tune system behavior, prompt wording, and model parameters. Capture great experiments as reusable prompts for your team.</p>
-      <div class="pill-row">
-        <span class="pill">Model router ready</span>
-        <span class="pill">Local history</span>
-        <span class="pill">Dark mode friendly</span>
-      </div>
     </div>
     <div class="hero-card">
       <div class="card-header">
