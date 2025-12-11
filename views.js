@@ -271,46 +271,23 @@ const libraryView = `
   </section>
 `;
 
-const sandboxView = `
-  <div class="sandbox-main">
-  <section class="sandbox-hero">
-    <div>
-      <p class="eyebrow">Launch Sandbox</p>
-      <h1>Experiment with prompts in real-time.</h1>
-      <p class="lede">Tune system behavior, prompt wording, and model parameters. Capture great experiments as reusable prompts for your team.</p>
-    </div>
-    <div class="hero-card">
-      <div class="card-header">
-        <div class="pill">Session state</div>
-        <div class="status success">Live</div>
-      </div>
-      <div class="mini-grid">
-        <div>
-          <p class="muted small">Last run</p>
-          <p class="value" id="last-run-time">—</p>
-        </div>
-        <div>
-          <p class="muted small">Saved prompts</p>
-          <p class="value" id="prompt-count">—</p>
-        </div>
-      </div>
-    </div>
-  </section>
-  <section class="panel sandbox-shell" id="sandbox-app">
-    <div class="sandbox-grid">
-      <div class="sandbox-column">
-        <div class="section-header compact">
-          <div>
-            <p class="eyebrow">Prompt configuration</p>
-            <h2>Compose your experiment</h2>
-            <p class="muted">Adjust the system role, user prompt, and inference settings before launching.</p>
-          </div>
-          <div class="sandbox-actions">
-            <button class="ghost" id="reset-btn" type="button">Reset</button>
-            <button class="primary" id="launch-btn" type="button">Launch</button>
-          </div>
-        </div>
-        <div class="field-group">
+  const sandboxView = `
+    <div class="sandbox-main">
+      <section class="panel sandbox-shell" id="sandbox-app">
+        <div class="sandbox-grid">
+          <div class="sandbox-column">
+            <div class="section-header compact">
+              <div>
+                <p class="eyebrow">Prompt configuration</p>
+                <h2>Compose your experiment</h2>
+                <p class="muted">Adjust the system role, user prompt, and inference settings before launching.</p>
+              </div>
+              <div class="sandbox-actions">
+                <button class="ghost" id="reset-btn" type="button">Reset</button>
+                <button class="primary" id="launch-btn" type="button">Launch</button>
+              </div>
+            </div>
+            <div class="field-group">
           <label class="field">
             <span>System / instructions <span class="muted">(optional)</span></span>
             <textarea id="system-input" rows="4" placeholder="You are a concise assistant that answers with short code snippets and explanations."></textarea>
