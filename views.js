@@ -88,48 +88,6 @@ const workspaceView = `
       </aside>
     </div>
   </section>
-  <section class="panel overview" id="overview">
-    <div class="section-header">
-      <div>
-        <p class="eyebrow">What's included</p>
-        <h2>Everything you can explore on this page</h2>
-        <p class="muted">Preview the full lab experience at a glance: authoring, collaboration, AI services, and the sandbox you can launch from the top bar.</p>
-      </div>
-      <div class="pill">Prompt feed · AI lab · Sandbox</div>
-    </div>
-    <div class="grid grid-3 feature-grid">
-      <div class="card feature-card">
-        <div class="feature-icon" aria-hidden="true">🧠</div>
-        <h3>Prompt workspace</h3>
-        <p class="muted">Compose prompts with validation, see real-time previews, and publish to the shared feed.</p>
-        <ul class="bullets">
-          <li>Compose, preview, and reset controls in the left rail</li>
-          <li>Sortable feed with tag filters, reactions, and pagination</li>
-          <li>Detail modal with comments, related prompts, and sharing</li>
-        </ul>
-      </div>
-      <div class="card feature-card">
-        <div class="feature-icon" aria-hidden="true">⚙️</div>
-        <h3>AI service layer</h3>
-        <p class="muted">A guided overview of the optimizers, summarizers, and retrieval utilities we expose.</p>
-        <ul class="bullets">
-          <li>Model-agnostic APIs with rate limits and observability hooks</li>
-          <li>Latency-aware summaries for feeds and notifications</li>
-          <li>Hybrid discovery powered by embeddings, tags, and recency</li>
-        </ul>
-      </div>
-      <div class="card feature-card">
-        <div class="feature-icon" aria-hidden="true">🧪</div>
-        <h3>Sandbox launch</h3>
-        <p class="muted">Jump into the sandbox to tweak providers, prompts, temperature, and safety settings.</p>
-        <ul class="bullets">
-          <li>Launch via the header button for live prompt experiments</li>
-          <li>Provider, model, and safety controls with instant feedback</li>
-          <li>Response history to compare outputs across iterations</li>
-        </ul>
-      </div>
-    </div>
-  </section>
   <section class="modal" id="delete-modal" hidden aria-label="Delete prompt confirmation">
     <div class="modal-content">
       <header class="modal-header">
