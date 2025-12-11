@@ -219,22 +219,12 @@ const labView = `
 
     <div class="lab-sections">
       <section class="lab-section" aria-label="Featured prompt">
-        <div class="section-header compact">
-          <div>
-            <p class="eyebrow">Featured</p>
-            <h2>Prompt spotlight</h2>
-          </div>
-        </div>
+        <div class="section-header compact"></div>
         <div id="featured-card" class="prompt-grid"></div>
       </section>
 
       <section class="lab-section" aria-label="Latest prompts">
-        <div class="section-header compact">
-          <div>
-            <p class="eyebrow">Latest</p>
-            <h2>Latest prompts</h2>
-          </div>
-        </div>
+        <div class="section-header compact"></div>
         <p class="muted small" id="lab-status" role="status">Loading prompts...</p>
         <div id="prompt-grid" class="prompt-grid"></div>
       </section>
